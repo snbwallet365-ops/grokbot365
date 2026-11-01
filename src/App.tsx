@@ -1,0 +1,150 @@
+import { useEffect, useRef, useState } from "react";
+import { useStore, useRuntime } from "./lib/store";
+import { checkServer, runBot } from "./lib/agent";
+import { runFlow } from "./lib/flows";
+import Sidebar, { NAV, type Section } from "./components/Sidebar";
+import ChatView from "./components/ChatView";
+import ComputerPanel from "./components/ComputerPanel";
+import BotEditor from "./components/BotEditor";
+import BrainView from "./components/BrainView";
+import AutomationsView from "./components/AutomationsView";
+import { BrowserView, RoutinesView, ConnectionsView, SettingsView } from "./components/Sections";
+
+const useWidth = () => {
+  const [w, setW] = useState(window.innerWidth);
+  useEffect(() => { const r = () => setW(window.innerWidth); window.addEventListener("resize", r); return () => window.removeEventListener("resize", r); }, []);
+  return w;
+};
+
+export default function App() {
+  const bots = useStore((s) => s.bots);
+  const theme = useStore((s) => s.settings.theme);
+  const live = useRuntime((s) => s.live);
+  const browser = useRuntime((s) => s.browser);
+  const drawer = useRuntime((s) => s.drawer);
+  const rightOpen = useRuntime((s) => s.rightOpen);
+  const toast = useRuntime((s) => s.toast);
+  const setRT = useRuntime((s) => s.set);
+  const width = useWidth();
+  const wide = width >= 768, xl = width >= 1180;
+
+  const [section, setSection] = useState<Section>(() => {
+    const s = new URLSearchParams(location.search).get("section") as Section | null;
+    return s && (s === "bots" || NAV.some((n) => n.id === s)) ? s : "bots";
+  });
+  const [activeId, setActiveId] = useState<string | null>(() => useStore.getState().bots[0]?.id ?? null);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("ns-collapsed") === "1");
+  const [editor, setEditor] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const autoTurn = useRef<string | null>(null);
+
+  useEffect(() => { localStorage.setItem("ns-collapsed", collapsed ? "1" : "0"); }, [collapsed]);
+  useEffect(() => { if (!activeId || !bots.find((b) => b.id === activeId)) setActiveId(bots[0]?.id ?? null); }, [bots, activeId]);
+  useEffect(() => { if (xl && localStorage.getItem("ns-right") !== "0") setRT({ rightOpen: true }); }, []);
+  useEffect(() => { if (xl) localStorage.setItem("ns-right", rightOpen ? "1" : "0"); }, [rightOpen, xl]);
+
+  // Theme
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#060608" : "#eef1f8");
+  }, [theme]);
+
+  // Auto-open the computer panel when the active bot starts using the browser (once per turn)
+  useEffect(() => {
+    const turn = activeId ? live[activeId] : null;
+    if (browser && turn && browser.botId === activeId && autoTurn.current !== turn && wide) {
+      autoTurn.current = turn; setRT({ rightOpen: true, rightTab: "computer" });
+    }
+  }, [browser?.url, browser?.botId, activeId, live, wide]);
+
+  // Local server health
+  useEffect(() => { checkServer(); const t = setInterval(checkServer, 15000); return () => clearInterval(t); }, []);
+
+  // Real-time schedulers: routines + automation flows
+  useEffect(() => {
+    const tick = () => {
+      const { routines, updateRoutine, bots, flows } = useStore.getState();
+      const now = Date.now(); const R = useRuntime.getState();
+      for (const r of routines) {
+        if (!r.enabled || !bots.find((b) => b.id === r.botId) || R.live[r.botId]) continue;
+        if (now >= (r.lastRun ?? 0) + r.everyMinutes * 60000) { updateRoutine(r.id, { lastRun: now }); runBot(r.botId, r.prompt, { routine: r.name }); }
+      }
+      for (const f of flows) {
+        if (f.trigger !== "schedule" || !f.enabled || R.flowRuns[f.id]?.running) continue;
+        if (now >= (f.lastRun ?? 0) + f.everyMinutes * 60000) runFlow(f.id);
+      }
+    };
+    const t = setInterval(tick, 20000); tick();
+    return () => clearInterval(t);
+  }, []);
+
+  // Keyboard shortcuts (desktop app feel)
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "b") { e.preventDefault(); setCollapsed((c) => !c); }
+      if (e.key === "." ) { e.preventDefault(); setRT({ rightOpen: !useRuntime.getState().rightOpen }); }
+      if (e.key === "j") { e.preventDefault(); useStore.getState().setSettings((s) => ({ ...s, theme: s.theme === "dark" ? "light" : "dark" })); }
+    };
+    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
+  }, []);
+
+  const selectBot = (id: string) => { setActiveId(id); setSection("bots"); };
+  const openKeys = () => { setSection("connections"); setRT({ drawer: false }); };
+  const showRight = section === "bots" && !!activeId && rightOpen;
+
+  const sidebar = (mobile = false) => (
+    <Sidebar section={section} setSection={setSection} activeId={activeId} onSelectBot={selectBot} onNewBot={() => setEditor({ open: true, id: null })}
+      collapsed={collapsed} setCollapsed={setCollapsed} mobile={mobile} />
+  );
+
+  const content = () => {
+    switch (section) {
+      case "browser": return <BrowserView onOpenBot={selectBot} />;
+      case "brain": return <BrainView />;
+      case "automations": return <AutomationsView />;
+      case "routines": return <RoutinesView />;
+      case "connections": return <ConnectionsView />;
+      case "settings": return <SettingsView />;
+      default: return activeId ? <ChatView key={activeId} botId={activeId} onEdit={() => setEditor({ open: true, id: activeId })} onOpenKeys={openKeys} /> : null;
+    }
+  };
+
+  return (
+    <div className="app-bg relative flex h-dvh w-full overflow-hidden md:gap-2.5 md:p-2.5">
+      {/* Ambient liquid blobs */}
+      <div className="blob top-[-10%] left-[-5%] h-[45vh] w-[45vh] bg-[#7aa8ff]" />
+      <div className="blob right-[-8%] bottom-[-12%] h-[50vh] w-[50vh] bg-[#ff9ec7]" style={{ animationDelay: "-8s" }} />
+      <div className="blob top-[30%] left-[45%] h-[35vh] w-[35vh] bg-[#8ef0cf]" style={{ animationDelay: "-15s" }} />
+
+      {wide && sidebar()}
+
+      {!wide && drawer && (
+        <div className="fixed inset-0 z-[55]">
+          <div className="fade-in absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setRT({ drawer: false })} />
+          <div className="drawer-in absolute inset-y-0 left-0">{sidebar(true)}</div>
+        </div>
+      )}
+
+      <main key={section === "bots" ? "bots" : section} className="lg-card fade-in relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden md:rounded-[26px]">
+        {content()}
+      </main>
+
+      {showRight && activeId && (xl ? (
+        <div className="slide-right relative z-10 h-full w-[400px] shrink-0 2xl:w-[460px]">
+          <ComputerPanel botId={activeId} onClose={() => setRT({ rightOpen: false })} />
+        </div>
+      ) : (
+        <div className="fixed inset-0 z-[56]">
+          <div className="fade-in absolute inset-0 bg-black/25 backdrop-blur-[2px]" onClick={() => setRT({ rightOpen: false })} />
+          <div className="slide-right absolute inset-y-0 right-0 w-full max-w-[440px] md:inset-y-2.5 md:right-2.5">
+            <ComputerPanel botId={activeId} onClose={() => setRT({ rightOpen: false })} />
+          </div>
+        </div>
+      ))}
+
+      <BotEditor botId={editor.id} open={editor.open} onClose={() => setEditor({ open: false, id: null })} onCreated={selectBot} />
+
+      {toast && <div className="toast-in lg-pill fixed top-[calc(env(safe-area-inset-top)+14px)] left-1/2 z-[80] rounded-full px-4 py-2.5 text-[14px] font-semibold">{toast}</div>}
+    </div>
+  );
+}
