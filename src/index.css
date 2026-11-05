@@ -206,3 +206,17 @@ select option { color: #000; }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+/* ---- sidebar drawer motion ---- */
+@keyframes drawer-out { from { transform: none; } to { transform: translateX(-102%); } }
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scrim-out { from { opacity: 1; } to { opacity: 0; } }
+.drawer-out { animation: drawer-out .24s cubic-bezier(.4,0,.7,.2) both; }
+.scrim-in { animation: scrim-in .22s ease both; }
+.scrim-out { animation: scrim-out .22s ease both; }
+.drawer-in { animation: drawer-in .34s cubic-bezier(.16,1,.3,1) both; }
+
+/* desktop sidebar collapse: smooth width + fade */
+@keyframes side-collapse { from { transform: none; opacity: 1; } to { transform: translateX(-8px); opacity: 0; } }
+.side-collapse { animation: side-collapse .18s ease both; }

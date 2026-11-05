@@ -117,14 +117,6 @@ export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string;
               </div>
               <div className="mt-6 text-[26px] font-bold tracking-tight">{bot.name}</div>
               <div className="mt-1.5 max-w-[38ch] text-[14.5px] leading-snug text-label2">{bot.title}</div>
-              <div className="mt-5 text-[13px] text-label3">
-                {lang === "bn" ? "যা দরকার লিখুন — বাংলায় উত্তর দেব" : "Ask anything — I answer in your language"}
-              </div>
-              {!hasKey && (
-                <button onClick={onOpenKeys} className="press mt-5 rounded-full bg-[#ff9500]/12 px-4 py-2 text-[13.5px] font-semibold text-[#ff9500]">
-                  {PROVIDERS[bot.provider].label} · {lang === "bn" ? "কী যোগ করুন" : "add API key"}
-                </button>
-              )}
             </div>
           ) : (
             <div className="space-y-6">
@@ -193,7 +185,6 @@ export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string;
               )}
             </div>
           </div>
-          <div className="mt-1.5 pb-0.5 text-center text-[11px] text-label3">N Space · {bot.name} {lang === "bn" ? "বাংলায় উত্তর দেবে" : "may make mistakes — verify important info"}</div>
         </div>
       </div>
 

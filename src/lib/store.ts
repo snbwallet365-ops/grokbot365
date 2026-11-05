@@ -59,6 +59,7 @@ export interface Settings {
   approvals: boolean; notifications: boolean; maxSteps: number; temperature: number;
   userName: string;
   theme: "light" | "dark"; language: "bn" | "en" | "auto"; adaptive: boolean;
+  connectors?: Record<string, { key: string; account?: string; status: "connected" | "saved"; at: number }>;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -117,6 +118,7 @@ const DEFAULT_SETTINGS: Settings = {
   keys: { xai: "", openai: "", deepseek: "", mistral: "", gemini: "" },
   whatsapp: { phone: "", token: "", phoneNumberId: "", connected: false },
   server: { url: "http://localhost:8787", useProxy: false },
+  connectors: {},
   approvals: true, notifications: false, maxSteps: 6, temperature: 0.7, userName: "You",
   theme: "light", language: "bn", adaptive: true,
 };
@@ -179,7 +181,7 @@ export const useStore = create<State>()(
           ...current, ...p,
           flows: p.flows ?? current.flows,
           docs: docs.some((d) => d.id === "k-lang") ? docs : [SEED_DOCS[0], ...docs],
-          settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}), keys: { ...DEFAULT_SETTINGS.keys, ...(p.settings?.keys ?? {}) }, whatsapp: { ...DEFAULT_SETTINGS.whatsapp, ...(p.settings?.whatsapp ?? {}) }, server: { ...DEFAULT_SETTINGS.server, ...(p.settings?.server ?? {}) } },
+          settings: { ...DEFAULT_SETTINGS, ...(p.settings ?? {}), connectors: { ...(p.settings?.connectors ?? {}) }, keys: { ...DEFAULT_SETTINGS.keys, ...(p.settings?.keys ?? {}) }, whatsapp: { ...DEFAULT_SETTINGS.whatsapp, ...(p.settings?.whatsapp ?? {}) }, server: { ...DEFAULT_SETTINGS.server, ...(p.settings?.server ?? {}) } },
         };
       },
       migrate: (s: any) => s,

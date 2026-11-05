@@ -8,7 +8,8 @@ import ComputerPanel from "./components/ComputerPanel";
 import BotEditor from "./components/BotEditor";
 import BrainView from "./components/BrainView";
 import AutomationsView from "./components/AutomationsView";
-import { BrowserView, RoutinesView, ConnectionsView, SettingsView } from "./components/Sections";
+import { BrowserView, RoutinesView, SettingsView } from "./components/Sections";
+import ConnectorsView from "./components/ConnectorsView";
 
 const useWidth = () => {
   const [w, setW] = useState(window.innerWidth);
@@ -103,7 +104,7 @@ export default function App() {
       case "brain": return <BrainView />;
       case "automations": return <AutomationsView />;
       case "routines": return <RoutinesView />;
-      case "connections": return <ConnectionsView />;
+      case "connections": return <ConnectorsView />;
       case "settings": return <SettingsView />;
       default: return activeId ? <ChatView key={activeId} botId={activeId} onEdit={() => setEditor({ open: true, id: activeId })} onOpenKeys={openKeys} /> : null;
     }
@@ -118,12 +119,7 @@ export default function App() {
 
       {wide && sidebar()}
 
-      {!wide && drawer && (
-        <div className="fixed inset-0 z-[55]">
-          <div className="fade-in absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setRT({ drawer: false })} />
-          <div className="drawer-in absolute inset-y-0 left-0">{sidebar(true)}</div>
-        </div>
-      )}
+      {!wide && <MobileDrawer open={drawer} onClose={() => setRT({ drawer: false })}>{sidebar(true)}</MobileDrawer>}
 
       <main key={section === "bots" ? "bots" : section} className="lg-card fade-in relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden md:rounded-[26px]">
         {content()}
@@ -145,6 +141,27 @@ export default function App() {
       <BotEditor botId={editor.id} open={editor.open} onClose={() => setEditor({ open: false, id: null })} onCreated={selectBot} />
 
       {toast && <div className="toast-in lg-pill fixed top-[calc(env(safe-area-inset-top)+14px)] left-1/2 z-[80] rounded-full px-4 py-2.5 text-[14px] font-semibold">{toast}</div>}
+    </div>
+  );
+}
+
+
+/** Sidebar drawer with a real open/close animation (spring in, soft slide out). */
+function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(open);
+  const [closing, setClosing] = useState(false);
+  useEffect(() => {
+    if (open) { setMounted(true); setClosing(false); return; }
+    if (!mounted) return;
+    setClosing(true);
+    const t = setTimeout(() => { setMounted(false); setClosing(false); }, 240);
+    return () => clearTimeout(t);
+  }, [open, mounted]);
+  if (!mounted) return null;
+  return (
+    <div className="fixed inset-0 z-[55]">
+      <div className={closing ? "scrim-out absolute inset-0 bg-black/30 backdrop-blur-[2px]" : "scrim-in absolute inset-0 bg-black/30 backdrop-blur-[2px]"} onClick={onClose} />
+      <div className={closing ? "drawer-out absolute inset-y-0 left-0" : "drawer-in absolute inset-y-0 left-0"}>{children}</div>
     </div>
   );
 }
