@@ -8,7 +8,7 @@ export type Shape = "circle" | "squircle" | "triangle" | "hex" | "diamond" | "bl
 export type ToolName = "search" | "browse" | "click" | "type" | "pdf" | "whatsapp" | "remember" | "ask_bot";
 
 export const PROVIDERS: Record<Provider, { label: string; color: string; models: string[]; keyUrl: string; keyHint: string }> = {
-  xai: { label: "Grok · xAI", color: "#111111", models: ["grok-4", "grok-4-fast", "grok-3", "grok-3-mini", "grok-code-fast-1"], keyUrl: "https://console.x.ai", keyHint: "xai-…" },
+  xai: { label: "xAI", color: "#111111", models: ["grok-4", "grok-4-fast", "grok-3", "grok-3-mini", "grok-code-fast-1"], keyUrl: "https://console.x.ai", keyHint: "xai-…" },
   openai: { label: "OpenAI", color: "#10a37f", models: ["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini", "gpt-5", "gpt-5-mini", "o4-mini"], keyUrl: "https://platform.openai.com/api-keys", keyHint: "sk-…" },
   deepseek: { label: "DeepSeek", color: "#4d6bfe", models: ["deepseek-chat", "deepseek-reasoner"], keyUrl: "https://platform.deepseek.com/api_keys", keyHint: "sk-…" },
   mistral: { label: "Mistral", color: "#fa520f", models: ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "codestral-latest", "magistral-medium-latest"], keyUrl: "https://console.mistral.ai/api-keys", keyHint: "Mistral API key" },
