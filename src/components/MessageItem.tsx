@@ -125,7 +125,7 @@ function MessageItem({ m, bot, live, onPreview, onOpenKeys, onRetry, onToast }: 
   const shareWa = () => window.open(`https://wa.me/?text=${encodeURIComponent(`${bot.name}:\n\n${text}`.slice(0, 3500))}`, "_blank");
 
   return (
-    <div className="fade-up group flex gap-3">
+    <div className="msg-in group flex gap-3">
       <div className="pt-0.5"><BotAvatar shape={bot.shape} color={bot.color} status={live ? "working" : "idle"} size={30} ring={false} /></div>
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-baseline gap-2">

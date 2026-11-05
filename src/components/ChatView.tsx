@@ -5,6 +5,7 @@ import { runBot, stopBot } from "../lib/agent";
 import BotAvatar, { StatusDot } from "./BotAvatar";
 import MessageItem from "./MessageItem";
 import { Sheet, MenuButton } from "./ui";
+import { contextualSuggestions } from "../lib/suggest";
 import { cn } from "../utils/cn";
 
 const SUGGEST_EN: Record<string, string[]> = {
@@ -94,7 +95,7 @@ export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string;
     recRef.current = r; r.start(); setListening(true);
   };
 
-  const S = lang === "bn" ? SUGGEST_BN : SUGGEST_EN;
+  const followUps = contextualSuggestions(thread, lang);
   const sugg = S[bot.id] ?? S[bot.knowledge ?? ""] ?? S.default;
   const deviceW = { phone: 390, tablet: 820, desktop: "100%" }[device];
 
@@ -129,18 +130,21 @@ export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string;
       <div ref={scrollRef} onScroll={(e) => { const el = e.currentTarget; stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; }} className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[800px] px-4 pt-6 pb-4 md:px-8">
           {thread.length === 0 ? (
-            <div className="fade-up flex min-h-[55vh] flex-col items-center justify-center text-center">
-              <div className="relative"><div className="absolute inset-0 scale-150 rounded-full blur-2xl" style={{ background: bot.color, opacity: 0.25 }} /><BotAvatar shape={bot.shape} color={bot.color} status={bot.status} size={92} /></div>
-              <div className="mt-5 text-[28px] font-bold tracking-tight">{bot.name}</div>
-              <div className="mt-1 max-w-sm text-[15px] text-label2">{bot.title} · {PROVIDERS[bot.provider].label}{bot.agentId ? " Agent" : ` · ${bot.model}`}</div>
-              {!hasKey && <button onClick={onOpenKeys} className="press mt-4 rounded-full bg-[#ff9500]/15 px-4 py-2 text-[14px] font-semibold text-[#ff9500]">Add {PROVIDERS[bot.provider].label} API key to start →</button>}
-              <div className="mt-8 grid w-full max-w-[640px] grid-cols-1 gap-2.5 sm:grid-cols-2">
-                {sugg.map((s, i) => (
-                  <button key={s} onClick={() => send(s)} style={{ animationDelay: `${i * 60}ms` }} className="fade-up press lg-pill flex items-start gap-2 rounded-[18px] px-4 py-3 text-left text-[14.5px] leading-snug hover:-translate-y-0.5">
-                    <Sparkles size={15} className="mt-0.5 shrink-0 text-[#007aff]" />{s}
-                  </button>
-                ))}
+            <div className="fade-up flex min-h-[62vh] flex-col items-center justify-center text-center">
+              <div className="relative">
+                <div className="absolute inset-0 scale-150 rounded-full blur-2xl" style={{ background: bot.color, opacity: 0.22 }} />
+                <BotAvatar shape={bot.shape} color={bot.color} status={bot.status} size={96} />
               </div>
+              <div className="mt-6 text-[26px] font-bold tracking-tight">{bot.name}</div>
+              <div className="mt-1.5 max-w-[38ch] text-[14.5px] leading-snug text-label2">{bot.title}</div>
+              <div className="mt-5 text-[13px] text-label3">
+                {lang === "bn" ? "যা দরকার লিখুন — বাংলায় উত্তর দেব" : "Ask anything — I answer in your language"}
+              </div>
+              {!hasKey && (
+                <button onClick={onOpenKeys} className="press mt-5 rounded-full bg-[#ff9500]/12 px-4 py-2 text-[13.5px] font-semibold text-[#ff9500]">
+                  {PROVIDERS[bot.provider].label} · {lang === "bn" ? "কী যোগ করুন" : "add API key"}
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
@@ -152,6 +156,20 @@ export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string;
 
       {/* Fixed composer */}
       <div className="pb-safe relative z-10 shrink-0 px-3 pt-1 md:px-8">
+        {thread.length > 0 && !busy && followUps.length > 0 && (
+          <div className="mx-auto mb-2 flex w-full max-w-[800px] gap-2 overflow-x-auto no-scrollbar">
+            {followUps.map((c, i) => (
+              <button
+                key={c}
+                onClick={() => send(c)}
+                style={{ animationDelay: `${i * 70}ms` }}
+                className="fade-up press shrink-0 rounded-full bg-fill px-3.5 py-1.5 text-[13px] font-medium text-label hover:bg-fill2"
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mx-auto w-full max-w-[800px]">
           {busy && (
             <button onClick={() => setRT({ rightOpen: true, rightTab: "activity" })} className="pop press lg-pill mx-auto mb-2 flex max-w-full items-center gap-2 rounded-full py-1.5 pr-3.5 pl-2 text-[13px]">

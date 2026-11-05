@@ -65,7 +65,7 @@ const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 export { uid };
 
 const DEFAULT_BOTS: Bot[] = [
-  { id: "grok", name: "Grok", title: "Chief of Staff", shape: "circle", color: "#1c1c1e", provider: "xai", model: "grok-4", main: true,
+  { id: "grok", name: "N Space", title: "Chief of Staff", shape: "circle", color: "#1c1c1e", provider: "xai", model: "grok-4", main: true,
     system: "You are Grok, the user's Chief of Staff bot at N Space. You coordinate other specialist bots, plan work, research, and get things done. Be proactive, smart and practical.",
     knowledge: "grok", tools: ["search", "browse", "remember", "pdf", "whatsapp", "ask_bot"], status: "idle", preview: "Ready to coordinate your team", updatedAt: Date.now() },
   { id: "browser", name: "Browser Agent", title: "Browser use · Playwright", shape: "squircle", color: "#007aff", provider: "openai", model: "gpt-4o-mini",

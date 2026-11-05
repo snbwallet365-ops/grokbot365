@@ -78,7 +78,7 @@ export default function Sidebar({ section, setSection, activeId, onSelectBot, on
       {/* Brand */}
       <div className={cn("flex items-center gap-2.5 px-3 pt-3.5 pb-3", c && "flex-col")}>
         <Logo size={c ? 40 : 38} />
-        {!c && <div className="min-w-0 flex-1"><div className="truncate text-[17px] font-bold tracking-tight">N Space</div><div className="truncate text-[11.5px] text-label2">Grok Bot · AI teammates</div></div>}
+        {!c && <div className="min-w-0 flex-1"><div className="truncate text-[17px] font-bold tracking-tight">N Space</div><div className="truncate text-[11.5px] text-label2">AI teammates</div></div>}
         <button onClick={() => setSettings((s) => ({ ...s, theme: dark ? "light" : "dark" }))} title={dark ? "Light mode" : "Dark mode"}
           className="press lg-pill relative flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full">
           <Sun size={16} className={cn("absolute text-[#ff9f0a] transition-all duration-500", dark ? "translate-y-6 rotate-90 opacity-0" : "translate-y-0 opacity-100")} />

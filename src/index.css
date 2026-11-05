@@ -179,3 +179,30 @@ select option { color: #000; }
 .md th, .md td { border: .5px solid var(--sep); padding: 6px 10px; text-align: left; }
 .md th { background: var(--fill); font-weight: 600; }
 .md hr { border: none; border-top: .5px solid var(--sep); margin: 1em 0; }
+
+
+/* ---- reply motion: springs in, content fades per block ---- */
+@keyframes msg-in {
+  0% { opacity: 0; transform: translateY(10px) scale(.985); filter: blur(4px); }
+  60% { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+.msg-in { animation: msg-in .42s cubic-bezier(.18,.9,.22,1) both; }
+
+@keyframes block-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.msg-in .md > * { animation: block-in .3s ease both; }
+.msg-in .md > *:nth-child(2) { animation-delay: .05s; }
+.msg-in .md > *:nth-child(3) { animation-delay: .1s; }
+.msg-in .md > *:nth-child(4) { animation-delay: .15s; }
+
+@keyframes avatar-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0,122,255,.25); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(0,122,255,0); }
+}
+.breathing { animation: avatar-breathe 1.8s ease-in-out infinite; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

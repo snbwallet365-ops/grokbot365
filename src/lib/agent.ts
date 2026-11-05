@@ -8,6 +8,13 @@ const R = () => useRuntime.getState();
 // ---------------- Local server ----------------
 export async function checkServer(): Promise<boolean> {
   const url = S().settings.server.url;
+  const local = /localhost|127\.0\.0\.1/.test(url);
+  const runningLocally = /localhost|127\.0\.0\.1/.test(location.hostname);
+  if (local && !runningLocally) {
+    // never probe a device-local server from production: it only spams the console
+    R().set({ serverOnline: false });
+    return false;
+  }
   try {
     const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 1500);
     const r = await fetch(`${url.replace(/\/$/, "")}/health`, { signal: ctl.signal });
