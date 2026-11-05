@@ -220,3 +220,41 @@ select option { color: #000; }
 /* desktop sidebar collapse: smooth width + fade */
 @keyframes side-collapse { from { transform: none; opacity: 1; } to { transform: translateX(-8px); opacity: 0; } }
 .side-collapse { animation: side-collapse .18s ease both; }
+
+
+/* ---------- splash ---------- */
+.splash-bg {
+  background:
+    radial-gradient(1200px 720px at 12% -10%, #dfe9ff 0%, transparent 58%),
+    radial-gradient(900px 700px at 92% 6%, #ffe2f1 0%, transparent 55%),
+    radial-gradient(950px 820px at 55% 112%, #d7fbec 0%, transparent 56%),
+    linear-gradient(168deg, #fbfcff, #eef1fa);
+  transition: opacity .4s ease, transform .4s ease;
+}
+.splash-out { opacity: 0; transform: scale(1.04); }
+.splash-blob { position: absolute; border-radius: 999px; filter: blur(90px); opacity: .55; pointer-events: none; }
+.splash-blob-a { left: -12%; top: -8%; width: 58vw; height: 58vw; background: #8fb6ff; animation: blob-float 12s ease-in-out infinite; }
+.splash-blob-b { right: -14%; bottom: -12%; width: 62vw; height: 62vw; background: #ffa8d2; animation: blob-float 14s ease-in-out infinite reverse; }
+.splash-blob-c { left: 38%; top: 34%; width: 40vw; height: 40vw; background: #8ff0cf; animation: blob-float 11s ease-in-out infinite; }
+.splash-halo { position: absolute; inset: -22%; border-radius: 999px; background: radial-gradient(circle, rgba(255,255,255,.85), rgba(255,255,255,0) 66%); filter: blur(14px); }
+
+@keyframes letter-in {
+  0% { opacity: 0; transform: translateY(16px) scale(.9); filter: blur(8px); }
+  100% { opacity: 1; transform: none; filter: blur(0); }
+}
+.splash-letter {
+  font-size: clamp(24px, 7vw, 34px);
+  font-weight: 800;
+  letter-spacing: .28em;
+  color: #1c1c1e;
+  animation: letter-in .62s cubic-bezier(.16,1,.3,1) both;
+}
+.splash-tagline { animation: fade-in .8s ease both; animation-delay: 1.15s; }
+@keyframes bar-fill { from { width: 0; } to { width: 100%; } }
+.splash-bar-fill { animation: bar-fill 1.7s cubic-bezier(.3,.8,.2,1) .5s both; }
+.splash-mark { display: block; animation: mark-in .9s cubic-bezier(.16,1,.3,1) both; }
+@keyframes mark-in {
+  0% { opacity: 0; transform: scale(.55) rotate(-12deg); }
+  70% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}

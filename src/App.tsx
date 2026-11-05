@@ -10,6 +10,9 @@ import BrainView from "./components/BrainView";
 import AutomationsView from "./components/AutomationsView";
 import { BrowserView, RoutinesView, SettingsView } from "./components/Sections";
 import ConnectorsView from "./components/ConnectorsView";
+import Splash from "./components/Splash";
+import AuthGate from "./components/Auth";
+import { useAuth } from "./lib/auth";
 
 const useWidth = () => {
   const [w, setW] = useState(window.innerWidth);
@@ -18,6 +21,16 @@ const useWidth = () => {
 };
 
 export default function App() {
+  const user = useAuth((s) => s.user);
+  const [booting, setBooting] = useState(() => {
+    try { return sessionStorage.getItem("ns-splash") !== "1"; } catch { return true; }
+  });
+  if (booting) return <Splash onDone={() => { try { sessionStorage.setItem("ns-splash", "1"); } catch {} setBooting(false); }} />;
+  if (!user) return <AuthGate />;
+  return <Workspace />;
+}
+
+function Workspace() {
   const bots = useStore((s) => s.bots);
   const theme = useStore((s) => s.settings.theme);
   const live = useRuntime((s) => s.live);

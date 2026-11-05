@@ -3,6 +3,8 @@ import { Globe, Play, Plus, Clock, ExternalLink, Server, CheckCircle2, XCircle, 
 import { useStore, useRuntime, PROVIDERS, type Provider, type Routine } from "../lib/store";
 import { checkServer, quickBrowse, runBot } from "../lib/agent";
 import { testKey } from "../lib/providers";
+import { useAuth, ADMIN_PIN } from "../lib/auth";
+import BrandMark from "./Logo";
 import BotAvatar from "./BotAvatar";
 import { LargeTitle, Group, Row, Toggle, Sheet, Field, inputCls, Pill, Segmented } from "./ui";
 import { LiveScreen } from "./ComputerPanel";
@@ -254,6 +256,11 @@ export function SettingsView() {
     window.addEventListener("beforeinstallprompt", h); return () => window.removeEventListener("beforeinstallprompt", h);
   }, []);
 
+  const { user, adminUnlocked, setAdmin, signOut } = useAuth();
+  const [pin, setPin] = useState("");
+  const [pinNote, setPinNote] = useState<string | null>(null);
+  const admin = !!user && (user.role === "admin" || adminUnlocked);
+
   const exportData = () => {
     const s = useStore.getState();
     const data = JSON.stringify({ bots: s.bots, threads: s.threads, docs: s.docs, routines: s.routines, settings: { ...s.settings, keys: { xai: "", openai: "", deepseek: "", mistral: "", gemini: "" } } }, null, 2);
@@ -269,6 +276,33 @@ export function SettingsView() {
   return (
     <div className="h-full overflow-y-auto pb-10">
       <LargeTitle title="Settings" />
+
+      <div className="px-4 md:px-7">
+        <div className="mb-6 flex items-center gap-3.5 rounded-[20px] bg-surface p-4 shadow-[0_1px_2px_rgba(0,0,0,.04)]">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#5ac8fa] to-[#007aff] text-[20px] font-bold text-white">{user?.name?.[0]?.toUpperCase() ?? "N"}</span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[16px] font-semibold">{user?.name ?? "Guest"}</div>
+            <div className="truncate text-[12.5px] text-label2">{user?.email ?? "not signed in"} · {admin ? "Admin" : "User"}</div>
+          </div>
+          <button onClick={signOut} className="press rounded-full bg-[#ff3b30]/10 px-3 py-1.5 text-[12.5px] font-semibold text-[#ff3b30]">Sign out</button>
+        </div>
+
+        <div className="mb-6 rounded-[18px] bg-surface p-4">
+          <div className="flex items-center gap-2 text-[14px] font-semibold"><BrandMark size={20} /> {admin ? "Admin unlocked" : "Admin access"}</div>
+          {admin ? (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="rounded-full bg-[#34c759]/12 px-2.5 py-1 text-[12px] font-semibold text-[#1e8e3e]">Full control</span>
+              <button onClick={() => { setAdmin(false); setPinNote(null); }} className="rounded-full bg-fill px-2.5 py-1 text-[12px] font-semibold text-label">Lock</button>
+            </div>
+          ) : (
+            <div className="mt-2 flex items-center gap-2">
+              <input value={pin} onChange={(e) => setPin(e.target.value)} type="password" placeholder="Admin PIN" className="min-w-0 flex-1 rounded-[12px] bg-fill px-3 py-2.5 text-[14px] outline-none" />
+              <button onClick={() => { if (pin.trim() === ADMIN_PIN) { setAdmin(true); setPinNote("Admin unlocked"); } else setPinNote("Wrong PIN"); setPin(""); }} className="rounded-[12px] bg-[#007aff] px-3.5 py-2.5 text-[13px] font-semibold text-white">Unlock</button>
+            </div>
+          )}
+          {pinNote && <div className="mt-1.5 text-[12px] font-medium text-[#007aff]">{pinNote}</div>}
+        </div>
+      </div>
       <div className="px-4 md:px-7">
         <Group>
           <Field label="Your name"><input value={settings.userName} onChange={(e) => set({ userName: e.target.value })} className={inputCls} /></Field>

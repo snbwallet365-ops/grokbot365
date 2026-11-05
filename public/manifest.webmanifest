@@ -1,23 +1,63 @@
 {
-  "name": "N Space — Grok Bot AI Teammates",
+  "name": "N Space \u2014 Visa & Recruitment AI",
   "short_name": "N Space",
   "description": "Multi-agent AI teammates: Grok, OpenAI, Gemini, Mistral, DeepSeek, browser-use, visa, legal & PDF experts.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "orientation": "any",
   "background_color": "#f2f2f7",
   "theme_color": "#f9f9fb",
-  "categories": ["productivity", "business", "utilities"],
+  "categories": [
+    "productivity",
+    "business",
+    "utilities"
+  ],
   "icons": [
-    { "src": "/icon-512.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Browser", "url": "/?section=browser", "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }] },
-    { "name": "Brain", "url": "/?section=brain", "icons": [{ "src": "/icon-512.png", "sizes": "512x512" }] }
+    {
+      "name": "Browser",
+      "url": "/?section=browser",
+      "icons": [
+        {
+          "src": "/icon-512.png",
+          "sizes": "512x512"
+        }
+      ]
+    },
+    {
+      "name": "Brain",
+      "url": "/?section=brain",
+      "icons": [
+        {
+          "src": "/icon-512.png",
+          "sizes": "512x512"
+        }
+      ]
+    }
   ]
 }

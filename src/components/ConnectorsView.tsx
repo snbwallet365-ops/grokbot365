@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, ChevronRight, ExternalLink, Loader2, Plug, Search, Trash2, X } from "lucide-react";
+import { Check, ChevronRight, ExternalLink, Loader2, Plug, Search, Trash2 } from "lucide-react";
 import { useStore, useRuntime } from "../lib/store";
 import { CATEGORIES, CONNECTORS, type ConnCategory, type Connector } from "../lib/connectors";
 import { Sheet } from "./ui";

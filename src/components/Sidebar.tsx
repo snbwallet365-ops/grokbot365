@@ -16,12 +16,9 @@ export const NAV: { id: Section; label: string; icon: typeof Globe; color: strin
 const STATUS = { idle: "", working: "Working", waiting: "Needs you", done: "Done", error: "Error" } as const;
 const ago = (t: number) => { const s = (Date.now() - t) / 1000; if (s < 60) return "now"; if (s < 3600) return `${Math.floor(s / 60)}m`; if (s < 86400) return `${Math.floor(s / 3600)}h`; return new Date(t).toLocaleDateString([], { month: "short", day: "numeric" }); };
 
+import BrandMark from "./Logo";
 export function Logo({ size = 36 }: { size?: number }) {
-  return (
-    <div className="logo-shine relative flex shrink-0 items-center justify-center font-black text-white" style={{ width: size, height: size, borderRadius: size * 0.3, background: "linear-gradient(135deg,#0a84ff 0%,#5e5ce6 55%,#bf5af2 100%)" }}>
-      <span style={{ fontSize: size * 0.52, letterSpacing: "-0.04em" }}>N</span>
-    </div>
-  );
+  return <BrandMark size={size} className="logo-shine shrink-0" />;
 }
 
 export default function Sidebar({ section, setSection, activeId, onSelectBot, onNewBot, collapsed, setCollapsed, mobile }: {
