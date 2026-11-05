@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { Search, Plus, Globe, Brain, Workflow, Repeat, Plug, Settings, Sun, Moon, PanelLeftClose, PanelLeftOpen, Crown, X, Server, Languages } from "lucide-react";
+import { Search, Plus, Globe, Brain, Workflow, Repeat, Plug, Settings, Sun, Moon, PanelLeftClose, PanelLeftOpen, Crown, X, Server, Languages, Cloud } from "lucide-react";
 import { useStore, useRuntime, PROVIDERS, type Bot } from "../lib/store";
 import BotAvatar from "./BotAvatar";
 import { cn } from "../utils/cn";
 
-export type Section = "bots" | "browser" | "brain" | "automations" | "routines" | "connections" | "settings";
+export type Section = "bots" | "browser" | "brain" | "automations" | "routines" | "connections" | "cloud" | "settings";
 export const NAV: { id: Section; label: string; icon: typeof Globe; color: string }[] = [
   { id: "browser", label: "Computer & Browser", icon: Globe, color: "#007aff" },
   { id: "brain", label: "Brain", icon: Brain, color: "#ff2d55" },
   { id: "automations", label: "Automations", icon: Workflow, color: "#af52de" },
   { id: "routines", label: "Routines", icon: Repeat, color: "#ff9500" },
   { id: "connections", label: "Connections", icon: Plug, color: "#34c759" },
+  { id: "cloud", label: "Cloud & keys", icon: Cloud, color: "#0a84ff" },
   { id: "settings", label: "Settings", icon: Settings, color: "#8e8e93" },
 ];
 const STATUS = { idle: "", working: "Working", waiting: "Needs you", done: "Done", error: "Error" } as const;
@@ -138,7 +139,10 @@ export default function Sidebar({ section, setSection, activeId, onSelectBot, on
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#5e5ce6] to-[#bf5af2] text-[13px] font-bold text-white">{(settings.userName || "U").slice(0, 1).toUpperCase()}</div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[14px] font-semibold">{settings.userName}</div>
-              <div className="flex items-center gap-1 text-[11.5px] text-label2"><span className={cn("h-1.5 w-1.5 rounded-full", online ? "bg-[#34c759]" : "bg-label3")} />{online ? "Local server" : "Cloud mode"} · {Object.values(settings.keys).filter(Boolean).length}/{Object.keys(PROVIDERS).length} keys</div>
+              <button onClick={() => setSection("cloud")} className="press flex items-center gap-1 text-[11.5px] text-label2 hover:text-[#007aff]">
+                <span className={cn("h-1.5 w-1.5 rounded-full", online ? "bg-[#34c759]" : "bg-label3")} />
+                {online ? "Local server" : "Cloud mode"} · {Object.values(settings.keys).filter(Boolean).length}/{Object.keys(PROVIDERS).length} keys
+              </button>
             </div>
             <button onClick={() => setSettings((s) => ({ ...s, language: s.language === "bn" ? "en" : s.language === "en" ? "auto" : "bn" }))} title="Reply language"
               className="press lg-pill flex h-8 items-center gap-1 rounded-full px-2.5 text-[12.5px] font-semibold"><Languages size={13} />{settings.language === "bn" ? "বাংলা" : settings.language === "en" ? "EN" : "Auto"}</button>

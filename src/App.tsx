@@ -12,6 +12,7 @@ import { BrowserView, RoutinesView, SettingsView } from "./components/Sections";
 import ConnectorsView from "./components/ConnectorsView";
 import Splash from "./components/Splash";
 import AuthGate from "./components/Auth";
+import CloudView from "./components/CloudView";
 import { useAuth } from "./lib/auth";
 
 const useWidth = () => {
@@ -118,6 +119,7 @@ function Workspace() {
       case "automations": return <AutomationsView />;
       case "routines": return <RoutinesView />;
       case "connections": return <ConnectorsView />;
+      case "cloud": return <CloudView onConnections={() => setSection("connections")} onSettings={() => setSection("settings")} />;
       case "settings": return <SettingsView />;
       default: return activeId ? <ChatView key={activeId} botId={activeId} onEdit={() => setEditor({ open: true, id: activeId })} onOpenKeys={openKeys} /> : null;
     }

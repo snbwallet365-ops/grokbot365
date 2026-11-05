@@ -3,6 +3,7 @@ import { Check, ChevronRight, ExternalLink, Loader2, Plug, Search, Trash2 } from
 import { useStore, useRuntime } from "../lib/store";
 import { CATEGORIES, CONNECTORS, type ConnCategory, type Connector } from "../lib/connectors";
 import { Sheet } from "./ui";
+import ConnLogo from "./ConnLogo";
 import { cn } from "../utils/cn";
 
 export interface ConnState { key: string; account?: string; status: "connected" | "saved"; at: number }
@@ -102,9 +103,13 @@ export default function ConnectorsView() {
               key={c.id}
               onClick={() => open(c)}
               style={{ animationDelay: `${Math.min(i * 25, 250)}ms` }}
-              className="fade-up press flex items-center gap-3 rounded-[18px] bg-surface p-3 text-left shadow-[0_1px_2px_rgba(0,0,0,.04)] hover:-translate-y-0.5"
+              className="fade-up press group relative flex items-center gap-3 overflow-hidden rounded-[20px] bg-surface p-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,.05)] hover:-translate-y-0.5"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[13px] text-[16px] font-bold text-white" style={{ background: c.color }}>{c.letter}</span>
+              <ConnLogo slug={c.slug} domain={c.domain} letter={c.letter} color={c.color} size={44} connected={st?.status === "connected"} />
+              <span
+                className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                style={{ background: `radial-gradient(140px 70px at 10% 30%, ${c.color}22, transparent)` }}
+              />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5">
                   <span className="truncate text-[15.5px] font-semibold">{c.name}</span>
@@ -136,7 +141,7 @@ export default function ConnectorsView() {
         {active && (
           <div className="p-4">
             <div className="flex items-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-[14px] text-[18px] font-bold text-white" style={{ background: active.color }}>{active.letter}</span>
+              <ConnLogo slug={active.slug} domain={active.domain} letter={active.letter} color={active.color} size={52} connected={connectors[active.id]?.status === "connected"} />
               <div className="min-w-0 flex-1">
                 <div className="text-[15px] font-semibold">{active.name}</div>
                 <div className="text-[12.5px] text-label2">{active.hint}</div>
