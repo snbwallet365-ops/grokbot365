@@ -55,6 +55,8 @@ function Workspace() {
   useEffect(() => { localStorage.setItem("ns-collapsed", collapsed ? "1" : "0"); }, [collapsed]);
   useEffect(() => { if (!activeId || !bots.find((b) => b.id === activeId)) setActiveId(bots[0]?.id ?? null); }, [bots, activeId]);
   useEffect(() => { if (xl && localStorage.getItem("ns-right") !== "0") setRT({ rightOpen: true }); }, []);
+  // any section change on a phone closes the drawer, so the page is never covered
+  useEffect(() => { if (!wide) setRT({ drawer: false }); }, [section, wide]);
   useEffect(() => { if (xl) localStorage.setItem("ns-right", rightOpen ? "1" : "0"); }, [rightOpen, xl]);
 
   // Theme
