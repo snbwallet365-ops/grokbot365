@@ -10,6 +10,7 @@ import BrainView from "./components/BrainView";
 import AutomationsView from "./components/AutomationsView";
 import { BrowserView, RoutinesView, SettingsView } from "./components/Sections";
 import ConnectorsView from "./components/ConnectorsView";
+import DashboardView from "./components/DashboardView";
 import Splash from "./components/Splash";
 import AuthGate from "./components/Auth";
 import CloudView from "./components/CloudView";
@@ -45,7 +46,7 @@ function Workspace() {
 
   const [section, setSection] = useState<Section>(() => {
     const s = new URLSearchParams(location.search).get("section") as Section | null;
-    return s && (s === "bots" || NAV.some((n) => n.id === s)) ? s : "bots";
+    return s && (s === "bots" || NAV.some((n) => n.id === s)) ? s : "dashboard";
   });
   const [activeId, setActiveId] = useState<string | null>(() => useStore.getState().bots[0]?.id ?? null);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("ns-collapsed") === "1");
@@ -120,6 +121,7 @@ function Workspace() {
       case "brain": return <BrainView />;
       case "automations": return <AutomationsView />;
       case "routines": return <RoutinesView />;
+      case "dashboard": return <DashboardView onOpenBot={(id) => selectBot(id)} />;
       case "connections": return <ConnectorsView />;
       case "cloud": return <CloudView onConnections={() => setSection("connections")} onSettings={() => setSection("settings")} />;
       case "settings": return <SettingsView />;

@@ -1,6 +1,8 @@
 import { useStore, useRuntime, KNOWLEDGE, TOOL_INFO, PROVIDERS, uid, type Bot, type Step, type ToolName } from "./store";
 import { streamChat, type ChatMsg } from "./providers";
 import { makePdf, downloadUrl } from "./pdf";
+import { countryBlock } from "./countries";
+import { localAnswer } from "./localAnswer";
 
 const S = () => useStore.getState();
 const R = () => useRuntime.getState();
@@ -132,6 +134,8 @@ function buildSystem(bot: Bot, query: string) {
   const s = S();
   const parts = [bot.system];
   if (bot.knowledge && KNOWLEDGE[bot.knowledge]) parts.push(KNOWLEDGE[bot.knowledge]);
+  const cBlock = countryBlock(S().settings.country);
+  if (cBlock) parts.push(cBlock);
   const mem = retrieve(query, bot.id);
   if (mem.length) parts.push("## Relevant memory from the Brain\n" + mem.map((d) => `### ${d.title}\n${d.content.slice(0, 1800)}`).join("\n\n"));
   if (bot.tools.length) {
@@ -198,6 +202,25 @@ export async function runBot(botId: string, userText: string, opt: { routine?: s
   const setStep = (id: string, p: Partial<Step>) => patch((m) => ({ ...m, steps: (m.steps ?? []).map((x: Step) => (x.id === id ? { ...x, ...p } : x)) }));
 
   const bot = S().bots.find((b) => b.id === botId)!;
+
+  // No cloud key for this provider: answer from the built-in desk knowledge instead of failing.
+  if (!String(S().settings.keys[bot.provider] ?? "").trim() && !bot.agentId) {
+    const answer = localAnswer(bot, userText, S().settings.country);
+    let shown = "";
+    addStep({ id: uid(), tool: "local", label: "Built-in desk engine", detail: "no API key needed", status: "done" });
+    for (const chunk of answer.match(/[\s\S]{1,28}/g) ?? []) {
+      if (ctl.signal.aborted) break;
+      shown += chunk;
+      patch((m) => ({ ...m, content: shown, model: "built-in" }));
+      await new Promise((r) => setTimeout(r, 12));
+    }
+    patch((m) => ({ ...m, content: shown, model: "built-in" }));
+    S().updateBot(botId, { status: "done", preview: shown.replace(/[*_#]/g, "").slice(0, 70), updatedAt: Date.now() });
+    R().showToast?.("বিল্ট-ইন ইঞ্জিনে উত্তর দেওয়া হয়েছে");
+    const live = { ...R().live }; delete live[botId];
+    R().set({ live, controllers: { ...R().controllers, [botId]: ctl } });
+    return shown;
+  }
   const msgs: ChatMsg[] = [
     { role: "system", content: buildSystem(bot, userText) },
     ...history.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: visibleText(m.content) || "(no content)" }) as ChatMsg),
