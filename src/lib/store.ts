@@ -8,11 +8,11 @@ export type Shape = "circle" | "squircle" | "triangle" | "hex" | "diamond" | "bl
 export type ToolName = "search" | "browse" | "click" | "type" | "pdf" | "whatsapp" | "remember" | "ask_bot";
 
 export const PROVIDERS: Record<Provider, { label: string; color: string; models: string[]; keyUrl: string; keyHint: string }> = {
-  xai: { label: "xAI", color: "#111111", models: ["grok-4", "grok-4-fast", "grok-3", "grok-3-mini", "grok-code-fast-1"], keyUrl: "https://console.x.ai", keyHint: "xai-…" },
-  openai: { label: "OpenAI", color: "#10a37f", models: ["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini", "gpt-5", "gpt-5-mini", "o4-mini"], keyUrl: "https://platform.openai.com/api-keys", keyHint: "sk-…" },
-  deepseek: { label: "DeepSeek", color: "#4d6bfe", models: ["deepseek-chat", "deepseek-reasoner"], keyUrl: "https://platform.deepseek.com/api_keys", keyHint: "sk-…" },
-  mistral: { label: "Mistral", color: "#fa520f", models: ["mistral-large-latest", "mistral-medium-latest", "mistral-small-latest", "codestral-latest", "magistral-medium-latest"], keyUrl: "https://console.mistral.ai/api-keys", keyHint: "Mistral API key" },
-  gemini: { label: "Google Gemini", color: "#1a73e8", models: ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "gemini-2.5-flash-lite"], keyUrl: "https://aistudio.google.com/apikey", keyHint: "AIza…" },
+  xai: { label: "xAI", color: "#111111", models: ["grok-4.7", "grok-4.6", "grok-4.5", "grok-4", "grok-build-0.1"], keyUrl: "https://console.x.ai", keyHint: "xai-…" },
+  openai: { label: "OpenAI", color: "#10a37f", models: ["gpt-6.1-terra", "gpt-6.1-terra-pro", "gpt-6.1-sol", "gpt-5.1", "gpt-5", "gpt-4.1-mini", "gpt-4o-mini"], keyUrl: "https://platform.openai.com/api-keys", keyHint: "sk-…" },
+  deepseek: { label: "DeepSeek", color: "#4d6bfe", models: ["deepseek-v4-pro", "deepseek-v4.1-flash", "deepseek-v4-flash", "deepseek-chat"], keyUrl: "https://platform.deepseek.com/api_keys", keyHint: "sk-…" },
+  mistral: { label: "Mistral", color: "#fa520f", models: ["mistral-large-4-0", "mistral-medium-3-5", "mistral-small-2603", "mistral-large-latest"], keyUrl: "https://console.mistral.ai/api-keys", keyHint: "Mistral API key" },
+  gemini: { label: "Google Gemini", color: "#1a73e8", models: ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-4-argon", "gemini-2.5-flash", "gemini-2.5-pro"], keyUrl: "https://aistudio.google.com/apikey", keyHint: "AIza…" },
 };
 
 export const TOOL_INFO: Record<ToolName, { label: string; desc: string }> = {
@@ -66,13 +66,13 @@ const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 export { uid };
 
 const DEFAULT_BOTS: Bot[] = [
-  { id: "grok", name: "N Space", title: "Chief of Staff", shape: "circle", color: "#1c1c1e", provider: "xai", model: "grok-4", main: true,
+  { id: "grok", name: "N Space", title: "Chief of Staff", shape: "circle", color: "#1c1c1e", provider: "xai", model: "grok-4.7", main: true,
     system: "You are Grok, the user's Chief of Staff bot at N Space. You coordinate other specialist bots, plan work, research, and get things done. Be proactive, smart and practical.",
     knowledge: "grok", tools: ["search", "browse", "remember", "pdf", "whatsapp", "ask_bot"], status: "idle", preview: "Ready to coordinate your team", updatedAt: Date.now() },
   { id: "browser", name: "Browser Agent", title: "Browser use · Playwright", shape: "squircle", color: "#007aff", provider: "openai", model: "gpt-4o-mini",
     system: "You are a browser-use agent. You navigate websites, read pages and complete web tasks step by step.",
     knowledge: "browser", tools: ["search", "browse", "click", "type", "remember"], status: "idle", preview: "Give me a web task", updatedAt: Date.now() - 1000 },
-  { id: "visa", name: "Visa Expert", title: "Visa & refusal specialist", shape: "star", color: "#ff9500", provider: "gemini", model: "gemini-2.5-flash",
+  { id: "visa", name: "Visa Expert", title: "Visa & refusal specialist", shape: "star", color: "#ff9500", provider: "gemini", model: "gemini-3.8-flash",
     system: "You are a senior visa consultant specialised in visa applications, refusal analysis, appeals and reapplication strategy for the US, UK, Schengen, Canada, Australia and more. Ask for the refusal letter wording, country, visa type and profile when missing. Produce clear action plans, checklists and cover letters.",
     knowledge: "visa", tools: ["search", "browse", "pdf", "remember", "whatsapp"], status: "idle", preview: "Analyse a visa refusal", updatedAt: Date.now() - 2000 },
   { id: "legal", name: "Legal Docs Expert", title: "Contracts & legal drafting", shape: "hex", color: "#5856d6", provider: "openai", model: "gpt-4o",

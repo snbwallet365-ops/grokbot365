@@ -43,6 +43,11 @@ export default function AuthGate() {
   const [stage, setStage] = useState<Stage>("choose");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("Bangladesh");
+  const [agency, setAgency] = useState("");
+  const [roleTitle, setRoleTitle] = useState("Visa Consultant");
+  const [password, setPassword] = useState("");
   const [clientId, setClientId] = useState(googleClientId);
   const [askClient, setAskClient] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -105,6 +110,10 @@ export default function AuthGate() {
     signIn({
       name: name.trim() || email.split("@")[0] || "N Space user",
       email: email.trim() || `user@nspace.local`,
+      phone: phone.trim(),
+      country,
+      agency: agency.trim(),
+      roleTitle,
       provider: "email",
       role: "user",
       acceptedTerms: true,
@@ -167,14 +176,25 @@ export default function AuthGate() {
           <div className="pop">
             <button onClick={() => setStage("choose")} className="press mb-6 flex items-center gap-1 text-[14px] font-medium text-label2"><ArrowLeft size={15} /> ফিরে যান</button>
             <div className="text-[24px] font-bold tracking-tight">আপনার অ্যাকাউন্ট</div>
-            <div className="mt-1 text-[13.5px] text-label2">নাম আর ইমেইল দিলেই হবে</div>
-            <div className="mt-6 space-y-2.5">
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="পূর্ণ নাম" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="ইমেইল" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
+            <div className="mt-1 text-[13.5px] text-label2">ভিসা ও রিক্রুটমেন্ট কাজের জন্য দরকারি তথ্য</div>
+            <div className="mt-5 space-y-2.5">
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="পূর্ণ নাম *" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" placeholder="ইমেইল *" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
+              <input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" inputMode="tel" placeholder="মোবাইল / WhatsApp * (+880…)" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
+              <div className="grid grid-cols-2 gap-2.5">
+                <select value={country} onChange={(e) => setCountry(e.target.value)} className="w-full rounded-[14px] bg-surface px-3 py-3.5 text-[15px] outline-none">
+                  {["Bangladesh","United Arab Emirates","Saudi Arabia","Qatar","Kuwait","Oman","Bahrain","Malaysia","Singapore","United Kingdom","Italy","Romania","Poland","Serbia","Moldova","Other"].map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={roleTitle} onChange={(e) => setRoleTitle(e.target.value)} className="w-full rounded-[14px] bg-surface px-3 py-3.5 text-[15px] outline-none">
+                  {["Visa Consultant","Agency Owner","Recruitment Officer","Documentation Officer","Student","Other"].map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <input value={agency} onChange={(e) => setAgency(e.target.value)} placeholder="এজেন্সি / কোম্পানির নাম (ঐচ্ছিক)" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
+              <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর) *" className="w-full rounded-[14px] bg-surface px-3.5 py-3.5 text-[15px] outline-none placeholder:text-label3" />
             </div>
             <button
               onClick={() => setStage("terms")}
-              disabled={!name.trim() || !email.includes("@")}
+              disabled={!name.trim() || !email.includes("@") || phone.replace(/\D/g, "").length < 8 || password.length < 6}
               className="press mt-4 flex w-full items-center justify-center gap-1.5 rounded-[15px] bg-[#007aff] py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
             >
               চালিয়ে যান <ArrowRight size={16} />

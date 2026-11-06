@@ -6,6 +6,10 @@ export type Role = "admin" | "user";
 export interface AuthUser {
   name: string;
   email: string;
+  phone?: string;
+  country?: string;
+  agency?: string;
+  roleTitle?: string;
   picture?: string;
   provider: "google" | "email";
   role: Role;

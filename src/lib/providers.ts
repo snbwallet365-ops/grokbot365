@@ -1,4 +1,5 @@
 import type { Provider } from "./store";
+import { LATEST, isModelError } from "./models";
 
 export interface ChatMsg { role: "system" | "user" | "assistant"; content: string }
 
@@ -14,6 +15,7 @@ interface Opts {
   agentId?: string; temperature?: number; signal?: AbortSignal;
   proxy?: string | null;
   onToken?: (t: string) => void; onReasoning?: (t: string) => void;
+  onModelSwitch?: (m: string) => void;
 }
 
 async function doFetch(url: string, init: RequestInit, proxy?: string | null) {
@@ -52,6 +54,23 @@ async function* sseLines(res: Response) {
 }
 
 export async function streamChat(o: Opts): Promise<string> {
+  try {
+    return await streamOnce(o);
+  } catch (err) {
+    // A retired model id is the most common reason a valid key "stops working".
+    if (!isModelError(err)) throw err;
+    for (const alt of LATEST[o.provider]) {
+      if (alt === o.model) continue;
+      try {
+        const out = await streamOnce({ ...o, model: alt });
+        if (out) { o.onModelSwitch?.(alt); return out; }
+      } catch { /* try the next id */ }
+    }
+    throw err;
+  }
+}
+
+async function streamOnce(o: Opts): Promise<string> {
   if (!o.apiKey) throw new Error(`NO_KEY:${o.provider}`);
   let full = "";
   // Merge consecutive same-role messages (required by Gemini, safer for all providers)
@@ -120,7 +139,7 @@ export async function streamChat(o: Opts): Promise<string> {
 
 /** Quick connectivity test for a key. */
 export async function testKey(provider: Provider, apiKey: string, proxy?: string | null): Promise<string> {
-  const model = { xai: "grok-3-mini", openai: "gpt-4o-mini", deepseek: "deepseek-chat", mistral: "mistral-small-latest", gemini: "gemini-2.5-flash" }[provider];
+  const model = LATEST[provider][0];
   const out = await streamChat({ provider, model, apiKey, proxy, messages: [{ role: "user", content: "Reply with exactly: OK" }] });
   return out.trim() || "OK";
 }

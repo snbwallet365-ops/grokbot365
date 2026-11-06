@@ -1,4 +1,4 @@
-import { useStore, useRuntime, KNOWLEDGE, TOOL_INFO, uid, type Bot, type Step, type ToolName } from "./store";
+import { useStore, useRuntime, KNOWLEDGE, TOOL_INFO, PROVIDERS, uid, type Bot, type Step, type ToolName } from "./store";
 import { streamChat, type ChatMsg } from "./providers";
 import { makePdf, downloadUrl } from "./pdf";
 
@@ -219,6 +219,7 @@ export async function runBot(botId: string, userText: string, opt: { routine?: s
         messages: msgs, temperature: S().settings.temperature, signal: ctl.signal, proxy,
         onToken: (t) => { buf += t; pending += t; if (!timer) timer = window.setTimeout(flush, 40); },
         onReasoning: (t) => { reasoning += t; if (!timer) timer = window.setTimeout(flush, 60); },
+        onModelSwitch: (m) => { S().updateBot(bot.id, { model: m }); R().showToast?.(`${PROVIDERS[bot.provider].label}: model switched to ${m}`); },
       });
       if (timer) clearTimeout(timer);
       buf = out;

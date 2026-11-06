@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { ArrowRight, Check, ChevronRight, Loader2, Plug, Server, Sparkles } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Loader2, Plug, RefreshCw, Server, Sparkles } from "lucide-react";
 import { useStore, useRuntime, PROVIDERS, type Provider } from "../lib/store";
 import { testKey } from "../lib/providers";
+import { listModels, pickBest } from "../lib/models";
 import { CONNECTORS } from "../lib/connectors";
 import ConnLogo from "./ConnLogo";
 import { Sheet } from "./ui";
@@ -29,9 +30,28 @@ export default function CloudView({ onConnections, onSettings }: { onConnections
   const [testing, setTesting] = useState<Provider | null>(null);
   const [result, setResult] = useState<Record<string, "ok" | "fail">>({});
   const [err, setErr] = useState<string | null>(null);
+  const [live, setLive] = useState<Record<string, string[]>>({});
+  const [model, setModel] = useState<Record<string, string>>({});
+  const [loadingModels, setLoadingModels] = useState<Provider | null>(null);
 
   const saved = Object.values(settings.keys).filter(Boolean).length;
   const connectedConns = Object.keys((settings as any).connectors ?? {}).length;
+
+  const refreshModels = async (p: Provider) => {
+    const key = ((editing ? settings.keys[p] : settings.keys[p]) ?? "").trim();
+    if (!key) { setErr("আগে কী দিন, তারপর মডেল লিস্ট আনব"); return; }
+    setLoadingModels(p); setErr(null);
+    try {
+      const list = await listModels(p, key, null);
+      if (!list.length) throw new Error("কোনো মডেল পাওয়া যায়নি");
+      setLive((l) => ({ ...l, [p]: list }));
+      const best = pickBest(list, p, model[p]);
+      setModel((m) => ({ ...m, [p]: best }));
+      toast(`${list.length} live models · ${best}`);
+    } catch (e: any) {
+      setErr(String(e?.message ?? e).slice(0, 110));
+    } finally { setLoadingModels(null); }
+  };
 
   const save = async () => {
     if (!editing) return;
@@ -43,6 +63,11 @@ export default function CloudView({ onConnections, onSettings }: { onConnections
     try {
       await testKey(p, key, null);
       setResult((r) => ({ ...r, [p]: "ok" }));
+      const chosen = model[p];
+      if (chosen) {
+        const st = useStore.getState();
+        st.bots.filter((b) => b.provider === p).forEach((b) => st.updateBot(b.id, { model: chosen }));
+      }
       toast(`${PROVIDERS[p].label} connected`);
       setTimeout(() => setEditing(null), 600);
     } catch (e: any) {
@@ -139,11 +164,28 @@ export default function CloudView({ onConnections, onSettings }: { onConnections
               placeholder={PROVIDERS[editing].keyHint}
               className="mt-4 w-full rounded-[14px] bg-fill px-3 py-3 text-[15px] outline-none placeholder:text-label3"
             />
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {PROVIDERS[editing].models.slice(0, 4).map((m) => (
-                <span key={m} className="rounded-full bg-fill px-2.5 py-1 text-[11.5px] text-label2">{m}</span>
-              ))}
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-[11.5px] font-semibold uppercase tracking-wide text-label2">Model</span>
+              <button onClick={() => refreshModels(editing)} disabled={loadingModels === editing}
+                className="press flex items-center gap-1 rounded-full bg-fill px-2.5 py-1 text-[11.5px] font-semibold text-label">
+                {loadingModels === editing ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Live models
+              </button>
             </div>
+            <select
+              value={model[editing] ?? PROVIDERS[editing].models[0]}
+              onChange={(e) => {
+                const m = e.target.value;
+                setModel((x) => ({ ...x, [editing]: m }));
+                const st = useStore.getState();
+                st.bots.filter((b) => b.provider === editing).forEach((b) => st.updateBot(b.id, { model: m }));
+              }}
+              className="mt-1.5 w-full rounded-[14px] bg-fill px-3 py-3 text-[14.5px] outline-none"
+            >
+              {(live[editing]?.length ? live[editing] : PROVIDERS[editing].models).map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-[11.5px] leading-snug text-label3">মডেল বদলালে সব বট সাথে সাথে নতুন মডেলে চলবে। পুরনো মডেল বন্ধ হলে অ্যাপ নিজেই পরেরটায় চলে যাবে।</p>
             <a href={PROVIDERS[editing].keyUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-[13px] font-medium text-[#007aff]">কী কোথায় পাব ↗</a>
             {err && <div className="mt-3 rounded-[12px] bg-fill px-3 py-2 text-[12.5px] text-label">{err}</div>}
             <div className="mt-4 flex gap-2">
