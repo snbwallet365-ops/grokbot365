@@ -11,6 +11,7 @@
  *   node server/index.mjs               # PORT=8787 HEADLESS=true by default
  */
 import http from "node:http";
+import { ocrImage, pdfText, ocrPdf } from "./doc.mjs";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -81,6 +82,21 @@ http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") { res.writeHead(204, cors); return res.end(); }
   try {
     if (url.pathname === "/health") return json(res, 200, { ok: true, playwright: !!page, headless: HEADLESS });
+
+    // ---------- passport / document reading (local, unlimited) ----------
+    if (url.pathname === "/ocr" && req.method === "POST") {
+      try { const { dataUrl } = await body(req); return json(res, 200, { text: await ocrImage(dataUrl) }); }
+      catch (e) { return json(res, 501, { error: `OCR unavailable: ${String(e.message).slice(0, 140)}. Install tesseract.` }); }
+    }
+    if (url.pathname === "/pdftext" && req.method === "POST") {
+      try {
+        const { dataUrl } = await body(req);
+        let text = "";
+        try { text = await pdfText(dataUrl); } catch { text = ""; }
+        if (!text.trim()) text = await ocrPdf(dataUrl); // scanned PDF
+        return json(res, 200, { text });
+      } catch (e) { return json(res, 501, { error: `PDF read unavailable: ${String(e.message).slice(0, 140)}. Install poppler (pdftotext/pdftoppm).` }); }
+    }
 
     if (url.pathname === "/proxy" && req.method === "POST") {
       const { url: target, method = "POST", headers = {}, body: b } = await body(req);

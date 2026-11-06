@@ -12,6 +12,7 @@ import AutomationsView from "./components/AutomationsView";
 import { BrowserView, RoutinesView, SettingsView } from "./components/Sections";
 import ConnectorsView from "./components/ConnectorsView";
 import DashboardView from "./components/DashboardView";
+import PackageView from "./components/PackageView";
 import Splash from "./components/Splash";
 import AuthGate from "./components/Auth";
 import CloudView from "./components/CloudView";
@@ -123,6 +124,7 @@ function Workspace() {
       case "automations": return <AutomationsView />;
       case "routines": return <RoutinesView />;
       case "dashboard": return <DashboardView onOpenBot={(id) => selectBot(id)} />;
+      case "package": return <PackageView />;
       case "connections": return <ConnectorsView />;
       case "cloud": return <CloudView onConnections={() => setSection("connections")} onSettings={() => setSection("settings")} />;
       case "settings": return <SettingsView />;
