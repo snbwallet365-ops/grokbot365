@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PanelLeft } from "lucide-react";
 import { useStore, useRuntime } from "./lib/store";
 import { checkServer, runBot } from "./lib/agent";
 import { runFlow } from "./lib/flows";
@@ -141,6 +142,19 @@ function Workspace() {
       {!wide && <MobileDrawer open={drawer} onClose={() => setRT({ drawer: false })}>{sidebar(true)}</MobileDrawer>}
 
       <main key={section === "bots" ? "bots" : section} className="lg-card fade-in relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden md:rounded-[26px]">
+        {!wide && section !== "bots" && (
+          <div className="pb-safe flex shrink-0 items-center gap-2 border-b border-[var(--sep)] px-3 py-2">
+            <button
+              onClick={() => setRT({ drawer: true })}
+              aria-label="Menu"
+              className="press flex h-9 items-center gap-1.5 rounded-full bg-fill px-3 text-[13.5px] font-semibold"
+            >
+              <PanelLeft size={16} />
+              {NAV.find((n) => n.id === section)?.label ?? "Menu"}
+            </button>
+            <span className="ml-auto text-[11.5px] text-label2">{useStore.getState().settings.country}</span>
+          </div>
+        )}
         {content()}
       </main>
 
