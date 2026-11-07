@@ -53,7 +53,17 @@ export async function readPassport(
     }
   }
 
-  // 2 — vision model
+  // 2 — browser OCR (tesseract.js, no key, no server)
+  if (!isPdf) {
+    try {
+      const text = await browserOcr(dataUrl);
+      const mrz = parseMrz(text);
+      if (mrz) return { text, passport: mrz, via: "local-ocr", note: "ব্রাউজার OCR" };
+      if (text.trim()) return { text, passport: guessFromText(text), via: "local-ocr", note: "ব্রাউজার OCR · ঘরগুলো মিলিয়ে নিন" };
+    } catch { /* fall through to vision */ }
+  }
+
+  // 3 — vision model
   if (opts.vision?.key) {
     try {
       const prompt =
@@ -88,6 +98,20 @@ export async function readPassport(
     via: "manual",
     note: "লোকাল সার্ভার অফলাইন আর কোনো AI কী নেই — ঘরগুলো হাতে ভরে নিন, বাকিটা অ্যাপ করবে",
   };
+}
+
+/** Offline OCR in the browser — lazy loaded so it never slows the first paint. */
+async function browserOcr(dataUrl: string): Promise<string> {
+  const mod: any = await import("tesseract.js");
+  const createWorker = mod.createWorker ?? mod.default?.createWorker;
+  if (!createWorker) throw new Error("OCR engine unavailable");
+  const worker = await createWorker("eng", 1, { logger: () => {} });
+  try {
+    const { data } = await worker.recognize(dataUrl);
+    return String(data?.text ?? "");
+  } finally {
+    await worker.terminate?.();
+  }
 }
 
 async function visionJson(v: { provider: string; key: string; model: string }, prompt: string, dataUrl: string, isPdf: boolean): Promise<string> {
