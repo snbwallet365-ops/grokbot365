@@ -1,4 +1,10 @@
 export interface Country {
+  fee?: string;
+  employer?: string;
+  payroll?: string;
+  permit?: string;
+  pathways?: string[];
+  roles?: string[];
   code: string;
   name: string;
   bn: string;
@@ -34,6 +40,31 @@ export const COUNTRIES: Country[] = [
 export function findCountry(code: string | undefined): Country | undefined {
   return COUNTRIES.find((c) => c.code === code);
 }
+
+
+/* Practical desk data: fees, employer cost, payroll and demand roles. */
+const EXTRA: Record<string, Pick<Country, "fee" | "employer" | "payroll" | "permit" | "pathways" | "roles">> = {
+  AU: { fee: "AUD 195 visitor · AUD 2,000+ sponsor", employer: "Sponsor levy AUD 1,200–1,800 + SAF", payroll: "Super 12% · PAYG withholding", permit: "482 / 186 nomination", pathways: ["482 → 186", "189 points", "Student → 485"], roles: ["Chef", "Aged care", "Welder", "Electrician", "Truck driver"] },
+  NZ: { fee: "NZD 246 visitor · NZD 750 work", employer: "Accredited employer + job check", payroll: "KiwiSaver 3% · PAYE", permit: "AEWV", pathways: ["AEWV → residence", "Green list straight to residence"], roles: ["Dairy farm", "Construction", "Hospitality", "Engineer"] },
+  RS: { fee: "EUR 60 C · EUR 100 D", employer: "Work permit via NES, no levy", payroll: "11.5% social · 10% income", permit: "Visa D + work permit", pathways: ["Visa D → temporary residence", "Family reunification"], roles: ["Construction", "Factory", "Driver", "Welder"] },
+  MD: { fee: "EUR 80", employer: "Employer submits invitation", payroll: "23% social · 12% income", permit: "Right to work + stay", pathways: ["Work → permanent residence"], roles: ["Textile", "Construction", "Agri"] },
+  EE: { fee: "EUR 80–120", employer: "Employer registers vacancy (Töötukassa)", payroll: "33% social tax", permit: "Short-term D + residence", pathways: ["Residence → EU long-term"], roles: ["Welder", "Warehouse", "IT", "Construction"] },
+  LT: { fee: "EUR 60–120", employer: "Work permit + mediation letter", payroll: "Sodra 23.3%", permit: "National visa D", pathways: ["D → temporary residence → PR"], roles: ["Truck driver", "Welder", "Construction", "Food production"] },
+  MT: { fee: "EUR 80–90", employer: "Single permit application", payroll: "SSC 10% employee", permit: "Single Permit", pathways: ["Single permit → long-term residence"], roles: ["Hospitality", "Cleaning", "Care", "Construction"] },
+  ME: { fee: "EUR 60", employer: "Employer obtains work permit first", payroll: "Social 15.5% · tax 9–15%", permit: "Work + stay permit", pathways: ["Temporary residence renewal"], roles: ["Construction", "Tourism", "Kitchen"] },
+  MA: { fee: "MAD 400–800", employer: "ANAPEC contract approval", payroll: "CNSS 4.48% employee", permit: "Work authorisation", pathways: ["Contract renewal"], roles: ["Textile", "Agri", "Construction"] },
+  SG: { fee: "SGD 30 visitor · SGD 105 work pass", employer: "Levy SGD 300–950 + security bond", payroll: "CPF for locals only", permit: "Work Permit / S Pass / EP", pathways: ["WP → SP → EP", "EP → PR"], roles: ["Construction", "Marine", "Process", "F&B"] },
+  MY: { fee: "MYR 100 visitor", employer: "Levy + FWCS insurance", payroll: "EPF 12–13% employer", permit: "PLKS / Employment Pass", pathways: ["PLKS renewal", "EP → PR"], roles: ["Plantation", "Manufacturing", "Services"] },
+  SA: { fee: "SAR 300+", employer: "Qiwa quota + levy SAR 800/mo", payroll: "GOSI 2% employee", permit: "Iqama work visa", pathways: ["Iqama renewal", "Premium residency"], roles: ["Driver", "Electrician", "Welder", "Nurse", "Chef"] },
+  AE: { fee: "AED 350 visitor · AED 3,000+ work", employer: "Quota + salary deposit, no levy", payroll: "No income tax · WPS salary", permit: "Employment visa + Emirates ID", pathways: ["Employment → Golden Visa"], roles: ["Driver", "Security", "Hospitality", "Technician"] },
+  KW: { fee: "KWD 3 visitor", employer: "Work visa quota + deposit", payroll: "PIFSS 11.5% employer", permit: "Article 18 work visa", pathways: ["Transfer between employers"], roles: ["Domestic", "Driver", "Cleaning", "Nursing"] },
+  BH: { fee: "BHD 25 visitor", employer: "LMRA permit + levy", payroll: "GOSI 12% employer", permit: "Work permit + CPR", pathways: ["Permit renewal", "Golden residency"], roles: ["Construction", "Hospitality", "Retail"] },
+  GB: { fee: "£127 visitor · £719–1,500 sponsor", employer: "Sponsor licence £574 + CoS £239 + ISC £1,000/yr", payroll: "PAYE 20% · NI 8%", permit: "Skilled Worker CoS", pathways: ["Skilled Worker → ILR 5 yr", "Student → Graduate"], roles: ["Care worker", "Chef", "Nurse", "Software engineer"] },
+  CA: { fee: "CAD 100 visitor · CAD 155 work", employer: "LMIA CAD 1,000", payroll: "CPP 5.95% · EI 1.66%", permit: "Work permit (LMIA / IMP)", pathways: ["PGWP → PR", "LMIA → PR"], roles: ["Truck driver", "Farm", "Food service", "Technician"] },
+  DE: { fee: "EUR 75–90", employer: "BA approval + priority check", payroll: "Social 20% · tax bands", permit: "National visa D + Blue Card", pathways: ["Blue Card → PR 21 mo", "Job seeker visa"], roles: ["Nurse", "Electrician", "Chef", "IT"] },
+  US: { fee: "USD 185 B1/B2 · USD 205 H-1B", employer: "H-1B lottery · LCA · USD 780+", payroll: "FICA 7.65% · federal tax", permit: "H-1B / H-2B / EB", pathways: ["H-1B → EB-2/3", "EB-5"], roles: ["Nurse", "IT", "Chef", "Agriculture"] },
+};
+for (const c of COUNTRIES) Object.assign(c, EXTRA[c.code] ?? {});
 
 export function countryBlock(code: string | undefined): string {
   const c = findCountry(code);

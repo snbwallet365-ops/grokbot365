@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Search, Plus, Globe, Brain, Workflow, Repeat, Plug, Settings, Sun, Moon, PanelLeftClose, PanelLeftOpen, Crown, X, Server, Languages, Cloud, LayoutDashboard, FileStack } from "lucide-react";
+import { Search, Plus, Globe, Brain, Workflow, Repeat, Plug, Settings, Sun, Moon, PanelLeftClose, PanelLeftOpen, Crown, X, Server, Languages, Cloud, LayoutDashboard, FileStack, Briefcase } from "lucide-react";
 import { useStore, useRuntime, PROVIDERS, type Bot } from "../lib/store";
 import BotAvatar from "./BotAvatar";
 import { cn } from "../utils/cn";
 
-export type Section = "package" | "dashboard" | "bots" | "browser" | "brain" | "automations" | "routines" | "connections" | "cloud" | "settings";
+export type Section = "explore" | "recruit" | "package" | "dashboard" | "bots" | "browser" | "brain" | "automations" | "routines" | "connections" | "cloud" | "settings";
 export const NAV: { id: Section; label: string; icon: typeof Globe; color: string }[] = [
   { id: "browser", label: "Computer & Browser", icon: Globe, color: "#007aff" },
   { id: "brain", label: "Brain", icon: Brain, color: "#ff2d55" },
@@ -12,6 +12,8 @@ export const NAV: { id: Section; label: string; icon: typeof Globe; color: strin
   { id: "routines", label: "Routines", icon: Repeat, color: "#ff9500" },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, color: "#0a84ff" },
   { id: "package", label: "Visa package", icon: FileStack, color: "#ff9500" },
+  { id: "explore", label: "Country explorer", icon: Globe, color: "#34c759" },
+  { id: "recruit", label: "Recruitment", icon: Briefcase, color: "#5e5ce6" },
   { id: "connections", label: "Connections", icon: Plug, color: "#34c759" },
   { id: "cloud", label: "Cloud & keys", icon: Cloud, color: "#0a84ff" },
   { id: "settings", label: "Settings", icon: Settings, color: "#8e8e93" },

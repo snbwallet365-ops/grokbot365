@@ -70,6 +70,13 @@ export interface Employer {
 export const EMPTY_APPLICANT: Applicant = { fullName: "", surname: "", givenNames: "", passportNo: "", nationality: "", dob: "", sex: "", expiry: "", issuePlace: "", phone: "", email: "", address: "", occupation: "", employerName: "" };
 export const EMPTY_EMPLOYER: Employer = { company: "", contactPerson: "", designation: "", address: "", phone: "", email: "", registrationNo: "", jobTitle: "", salary: "", contractStart: "" };
 
+export type Stage = "new" | "screening" | "interview" | "offer" | "visa" | "placed" | "rejected";
+export interface Candidate { id: string; name: string; passport: string; country: string; role: string; stage: Stage; phone?: string; note?: string; updatedAt: number }
+export interface RecEmployer { id: string; company: string; country: string; contact?: string; email?: string; phone?: string; sector?: string; updatedAt: number }
+export interface RecJob { id: string; title: string; employer: string; country: string; salary?: string; slots?: string; status: "open" | "filled" | "hold"; updatedAt: number }
+export interface RecInterview { id: string; candidate: string; employer: string; when: string; mode?: string; outcome?: string; updatedAt: number }
+export interface Hiring { candidates: Candidate[]; employers: RecEmployer[]; jobs: RecJob[]; interviews: RecInterview[] }
+
 export interface Routine { id: string; botId: string; name: string; prompt: string; everyMinutes: number; enabled: boolean; lastRun?: number }
 export interface BrowserSession { id: string; botId: string; url: string; title: string; screenshot?: string; time: number }
 export type FlowOutput = "none" | "pdf" | "whatsapp" | "brain";
@@ -87,6 +94,7 @@ export interface Settings {
   country?: string;
 }
 
+const S_EMPTY = { country: "GB" };
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 export { uid };
 
@@ -134,6 +142,10 @@ export const KNOWLEDGE: Record<string, string> = {
 interface State {
   bots: Bot[]; threads: Record<string, Message[]>; docs: BrainDoc[]; routines: Routine[]; sessions: BrowserSession[]; flows: Flow[]; settings: Settings; cases: CaseFile[]; profiles: { applicant: Applicant; employer: Employer };
   setProfile: (p: Partial<{ applicant: Applicant; employer: Employer }>) => void;
+  hiring: Hiring;
+  addHiring: <K extends keyof Hiring>(kind: K) => string;
+  updateHiring: <K extends keyof Hiring>(kind: K, id: string, p: Partial<Hiring[K][number]>) => void;
+  removeHiring: <K extends keyof Hiring>(kind: K, id: string) => void;
   addCase: (c: Omit<CaseFile, "id" | "updatedAt">) => string; updateCase: (id: string, p: Partial<CaseFile>) => void; removeCase: (id: string) => void;
   addBot: (b: Partial<Bot>) => string; updateBot: (id: string, p: Partial<Bot>) => void; removeBot: (id: string) => void;
   pushMsg: (botId: string, m: Message) => void; patchMsg: (botId: string, id: string, fn: (m: Message) => Message) => void; clearThread: (botId: string) => void;
@@ -155,7 +167,7 @@ const DEFAULT_SETTINGS: Settings = {
 };
 
 const initial = () => ({
-  bots: DEFAULT_BOTS, threads: {} as Record<string, Message[]>, docs: SEED_DOCS, sessions: [] as BrowserSession[], cases: [] as CaseFile[], profiles: { applicant: EMPTY_APPLICANT, employer: EMPTY_EMPLOYER },
+  bots: DEFAULT_BOTS, threads: {} as Record<string, Message[]>, docs: SEED_DOCS, sessions: [] as BrowserSession[], cases: [] as CaseFile[], profiles: { applicant: EMPTY_APPLICANT, employer: EMPTY_EMPLOYER }, hiring: { candidates: [], employers: [], jobs: [], interviews: [] } as Hiring,
   routines: [
     { id: "r1", botId: "grok", name: "Morning briefing", prompt: "Give me a short morning briefing: top tech & world headlines today with sources.", everyMinutes: 1440, enabled: false },
     { id: "r2", botId: "visa", name: "Visa policy watch", prompt: "Search for the latest visa policy changes this week for our active countries and summarise.", everyMinutes: 10080, enabled: false },
@@ -195,6 +207,17 @@ export const useStore = create<State>()(
       addFlow: (f) => { const id = uid(); set((s) => ({ flows: [...s.flows, { ...f, id }] })); return id; },
       updateFlow: (id, p) => set((s) => ({ flows: s.flows.map((f) => (f.id === id ? { ...f, ...p } : f)) })),
       removeFlow: (id) => set((s) => ({ flows: s.flows.filter((f) => f.id !== id) })),
+      addHiring: (kind) => {
+        const id = uid();
+        const row: any = kind === "candidates" ? { name: "", passport: "", country: S_EMPTY.country, role: "", stage: "new" }
+          : kind === "employers" ? { company: "", country: S_EMPTY.country, contact: "" }
+          : kind === "jobs" ? { title: "", employer: "", country: S_EMPTY.country, status: "open", salary: "", slots: "1" }
+          : { candidate: "", employer: "", when: new Date().toISOString().slice(0, 16), mode: "video", outcome: "pending" };
+        set((s) => ({ hiring: { ...s.hiring, [kind]: [{ ...row, id, updatedAt: Date.now() }, ...s.hiring[kind]] } as Hiring }));
+        return id;
+      },
+      updateHiring: (kind, id, p) => set((s) => ({ hiring: { ...s.hiring, [kind]: (s.hiring[kind] as any[]).map((r) => (r.id === id ? { ...r, ...p, updatedAt: Date.now() } : r)) } as Hiring })),
+      removeHiring: (kind, id) => set((s) => ({ hiring: { ...s.hiring, [kind]: (s.hiring[kind] as any[]).filter((r) => r.id !== id) } as Hiring })),
       addCase: (c) => { const id = uid(); set((s) => ({ cases: [{ ...c, id, updatedAt: Date.now() }, ...s.cases].slice(0, 300) })); return id; },
       updateCase: (id, p) => set((s) => ({ cases: s.cases.map((c) => (c.id === id ? { ...c, ...p, updatedAt: Date.now() } : c)) })),
       removeCase: (id) => set((s) => ({ cases: s.cases.filter((c) => c.id !== id) })),
@@ -208,7 +231,7 @@ export const useStore = create<State>()(
     {
       name: "grokbot-v2",
       version: 3,
-      partialize: (s) => ({ cases: s.cases, bots: s.bots.map((b) => ({ ...b, status: b.status === "working" ? "idle" : b.status })), threads: s.threads, docs: s.docs, routines: s.routines, sessions: s.sessions, flows: s.flows, settings: s.settings, profiles: s.profiles }) as any,
+      partialize: (s) => ({ cases: s.cases, bots: s.bots.map((b) => ({ ...b, status: b.status === "working" ? "idle" : b.status })), threads: s.threads, docs: s.docs, routines: s.routines, sessions: s.sessions, flows: s.flows, settings: s.settings, profiles: s.profiles, hiring: s.hiring }) as any,
       merge: (persisted: any, current) => {
         const p = persisted ?? {};
         const docs: BrainDoc[] = p.docs ?? current.docs;

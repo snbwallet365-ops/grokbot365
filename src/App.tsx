@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { PanelLeft, LayoutDashboard, FileStack, Plug, Brain, Settings as SettingsIcon } from "lucide-react";
+import { PanelLeft, LayoutDashboard, FileStack, Settings as SettingsIcon, Globe as GlobeIcon, Briefcase as BriefcaseIcon } from "lucide-react";
 import { useStore, useRuntime } from "./lib/store";
 import { checkServer, runBot } from "./lib/agent";
 import { runFlow } from "./lib/flows";
@@ -13,6 +13,8 @@ import { BrowserView, RoutinesView, SettingsView } from "./components/Sections";
 import ConnectorsView from "./components/ConnectorsView";
 import DashboardView from "./components/DashboardView";
 import PackageView from "./components/PackageView";
+import ExploreView from "./components/ExploreView";
+import RecruitView from "./components/RecruitView";
 import Splash from "./components/Splash";
 import AuthGate from "./components/Auth";
 import CloudView from "./components/CloudView";
@@ -125,6 +127,8 @@ function Workspace() {
       case "routines": return <RoutinesView />;
       case "dashboard": return <DashboardView onOpenBot={(id) => selectBot(id)} />;
       case "package": return <PackageView />;
+      case "explore": return <ExploreView />;
+      case "recruit": return <RecruitView />;
       case "connections": return <ConnectorsView />;
       case "cloud": return <CloudView onConnections={() => setSection("connections")} onSettings={() => setSection("settings")} />;
       case "settings": return <SettingsView />;
@@ -208,9 +212,9 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
 function MobileTabs({ section, setSection }: { section: Section; setSection: (s: Section) => void }) {
   const tabs = [
     { id: "dashboard" as Section, label: "Home", icon: LayoutDashboard },
+    { id: "explore" as Section, label: "Countries", icon: GlobeIcon },
+    { id: "recruit" as Section, label: "Hiring", icon: BriefcaseIcon },
     { id: "package" as Section, label: "Package", icon: FileStack },
-    { id: "connections" as Section, label: "Connect", icon: Plug },
-    { id: "brain" as Section, label: "Brain", icon: Brain },
     { id: "settings" as Section, label: "Settings", icon: SettingsIcon },
   ];
   return (

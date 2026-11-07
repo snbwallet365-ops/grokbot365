@@ -24,6 +24,13 @@ function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
   return <span>{n}{suffix}</span>;
 }
 
+const SLIDES = [
+  { kicker: "VisaHOBe · Global mobility OS", l1: "Global hiring.", l2: "Visas included.", sub: "One desk for recruitment, visa processing, documentation and payroll. Your agents read the passport, build the file and keep every deadline." },
+  { kicker: "Built for consultancies", l1: "Every case.", l2: "One pipeline.", sub: "Employers, candidates, interviews and embassy submissions stay in a single timeline, so nothing waits in an inbox." },
+  { kicker: "Apple-grade privacy", l1: "Your data.", l2: "Your device.", sub: "Keys and documents stay on this device unless you send them to a provider. Local server runs unlimited, offline." },
+  { kicker: "19 destinations", l1: "From Dhaka.", l2: "To anywhere.", sub: "Country rules, employer costs, payroll and pathways — checked against the official portal before you file." },
+];
+
 const KINDS = [
   { id: "visa", label: "Visa", icon: Globe2, color: "#0071e3" },
   { id: "recruit", label: "Recruitment", icon: Users2, color: "#34c759" },
@@ -57,6 +64,14 @@ export default function DashboardView({ onOpenBot }: { onOpenBot: (id: string) =
   const docs = useStore((s) => s.docs.length);
   const threads = useStore((s) => s.threads);
 
+  const [slide, setSlide] = useState(0);
+  const [par, setPar] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setSlide((i) => (i + 1) % SLIDES.length), 5600);
+    return () => clearInterval(t);
+  }, []);
+  const s0 = SLIDES[slide];
   const country = COUNTRIES.find((c) => c.code === settings.country) ?? COUNTRIES[0];
   const list = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -85,25 +100,32 @@ export default function DashboardView({ onOpenBot }: { onOpenBot: (id: string) =
   ];
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto" onScroll={(e) => setPar(Math.min(90, e.currentTarget.scrollTop * 0.16))}>
       <div className="pb-28">
 
         {/* ---------- Hero ---------- */}
-        <section className="relative px-5 pt-8 pb-4 md:px-10 md:pt-14">
-          <div className="mx-auto max-w-[980px]">
+        <section className="relative overflow-hidden px-5 pt-8 pb-4 md:px-10 md:pt-14">
+          <div aria-hidden className="pointer-events-none absolute -top-24 -right-16 h-[320px] w-[320px] rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(0,113,227,.22),transparent_62%)] blur-2xl" style={{ transform: `translate3d(0,${par * -0.6}px,0)` }} />
+          <div aria-hidden className="pointer-events-none absolute top-24 -left-20 h-[280px] w-[280px] rounded-full bg-[radial-gradient(circle_at_50%_50%,rgba(191,90,242,.18),transparent_62%)] blur-2xl" style={{ transform: `translate3d(0,${par * -0.35}px,0)` }} />
+          <div className="relative mx-auto max-w-[980px]">
             <div className="reveal flex items-center gap-2.5">
               <BrandMark size={30} />
-              <span className="eyebrow">VisaHOBe · Global mobility OS</span>
+              <span key={`k${slide}`} className="eyebrow slide-in">{s0.kicker}</span>
             </div>
-            <h1 className="reveal reveal-1 display-1 mt-5 text-[var(--label)]">
-              Global hiring.<br />
-              <span className="bg-gradient-to-r from-[#0071e3] via-[#5e5ce6] to-[#bf5af2] bg-clip-text text-transparent">Visas included.</span>
-            </h1>
-            <p className="reveal reveal-2 mt-5 max-w-[620px] text-[17px] leading-relaxed text-[var(--label2)] md:text-[19px]">
-              One desk for recruitment, visa processing, documentation and payroll across {COUNTRIES.length} countries.
-              Your AI agents read the passport, build the file and keep every deadline.
-            </p>
-            <div className="reveal reveal-3 mt-7 flex flex-wrap items-center gap-3">
+            <div key={slide} className="slide-in">
+              <h1 className="display-1 mt-5 text-[var(--label)]">
+                {s0.l1}<br />
+                <span className="bg-gradient-to-r from-[#0071e3] via-[#5e5ce6] to-[#bf5af2] bg-clip-text text-transparent">{s0.l2}</span>
+              </h1>
+              <p className="mt-5 max-w-[640px] text-[17px] leading-relaxed text-[var(--label2)] md:text-[19px]">{s0.sub}</p>
+            </div>
+            <div className="mt-6 flex items-center gap-1.5">
+              {SLIDES.map((_, i) => (
+                <button key={i} aria-label={`Slide ${i + 1}`} onClick={() => setSlide(i)}
+                  className={cn("h-1.5 rounded-full transition-all duration-500", i === slide ? "w-7 bg-[#0071e3]" : "w-1.5 bg-[var(--sep)]")} />
+              ))}
+            </div>
+            <div className="reveal reveal-3 mt-6 flex flex-wrap items-center gap-3">
               <button onClick={() => fileRef.current?.click()} className="press flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-3 text-[15px] font-semibold text-white shadow-[0_10px_28px_rgba(0,113,227,.32)]">
                 <Upload size={17} /> Start from a passport
               </button>

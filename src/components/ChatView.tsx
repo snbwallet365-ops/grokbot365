@@ -7,6 +7,7 @@ import MessageItem from "./MessageItem";
 import { Sheet, MenuButton } from "./ui";
 import { contextualSuggestions } from "../lib/suggest";
 import { cn } from "../utils/cn";
+import { readPassport } from "../lib/ocr";
 
 export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string; onEdit: () => void; onOpenKeys: () => void }) {
   const bot = useStore((s) => s.bots.find((b) => b.id === botId));
@@ -58,8 +59,23 @@ export default function ChatView({ botId, onEdit, onOpenKeys }: { botId: string;
     if (!list) return;
     const out: typeof files = [];
     for (const f of Array.from(list)) {
-      if (f.size > 2_000_000) { showToast(`${f.name} is too large (2MB max)`); continue; }
-      if (!/^text\/|json|csv|xml|markdown|javascript|typescript/.test(f.type) && !/\.(txt|md|csv|json|ts|tsx|js|html|css|py|xml|yml|yaml)$/i.test(f.name)) { showToast("Text-based files only (txt, md, csv, json, code)"); continue; }
+      const isImg = /^image\//.test(f.type);
+      const isPdf = f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      if (!isImg && !isPdf && f.size > 2_000_000) { showToast(`${f.name} অনেক বড় (2MB)`); continue; }
+      if (isImg || isPdf) {
+        showToast(`${f.name} পড়া হচ্ছে…`);
+        try {
+          const S = useStore.getState().settings;
+          const vision = S.keys.gemini ? { provider: "gemini" as const, key: S.keys.gemini, model: "gemini-3.8-flash" } : undefined;
+          const res = await readPassport(f, { serverUrl: S.server.url, serverOnline: useRuntime.getState().serverOnline, vision });
+          out.push({ name: f.name, size: f.size, text: `[${isPdf ? "PDF" : "Image"} · ${res.via}]\n${res.text.slice(0, 12000)}` });
+          showToast(`${f.name} পড়া হয়েছে (${res.via})`);
+        } catch {
+          out.push({ name: f.name, size: f.size, text: `[${f.name}] ফাইলটি পড়া যায়নি, ম্যানুয়ালি তথ্য দিন।` });
+        }
+        continue;
+      }
+      if (!/^text\/|json|csv|xml|markdown|javascript|typescript/.test(f.type) && !/\.(txt|md|csv|json|ts|tsx|js|html|css|py|xml|yml|yaml)$/i.test(f.name)) { showToast("টেক্সট, ছবি বা PDF দিন"); continue; }
       out.push({ name: f.name, size: f.size, text: await f.text() });
     }
     setFiles((p) => [...p, ...out]);
