@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Check, Download, FileText, Loader2, ScanLine, Sparkles, Upload } from "lucide-react";
 import { useStore, useRuntime, type Applicant, type Employer } from "../lib/store";
 import { readPassport } from "../lib/ocr";
+import { parseMrz } from "../lib/mrz";
 import { downloadPackage } from "../lib/visaPackage";
 import { COUNTRIES } from "../lib/countries";
 import { cn } from "../utils/cn";
@@ -119,6 +120,18 @@ export default function PackageView() {
               <span className="block truncate text-[12px] text-label2">{via ? `সোর্স: ${via}` : "MRZ থেকে নাম, নম্বর, জন্মতারিখ, মেয়াদ"}</span>
             </span>
           </button>
+          <div className="mt-3 rounded-[14px] bg-surface p-3 ring-1 ring-[var(--sep)]">
+            <div className="text-[12px] font-semibold text-label2">পাসপোর্টের নিচের দুই লাইন (MRZ) পেস্ট করলে সাথে সাথে পড়ে নেবে</div>
+            <textarea
+              className="mt-2 w-full rounded-[10px] bg-white px-2.5 py-2 font-mono text-[12px] outline-none ring-1 ring-[var(--sep)]"
+              placeholder="P<BGD... and the second line"
+              rows={2}
+              onChange={(ev) => {
+                const mrz = parseMrz(ev.target.value);
+                if (mrz?.passportNo) { setProfile({ applicant: { ...a, ...mrz } as Applicant }); setNote("MRZ পড়া হয়েছে, ঘরগুলো মিলিয়ে নিন"); setVia("manual"); }
+              }}
+            />
+          </div>
           <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(ev) => { const f = ev.target.files?.[0]; if (f) onFile(f); ev.currentTarget.value = ""; }} />
           {note && <div className="mt-2 rounded-[12px] bg-fill px-3 py-2 text-[12.5px] text-label2">{note}</div>}
         </div>

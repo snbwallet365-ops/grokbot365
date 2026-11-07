@@ -105,7 +105,12 @@ async function browserOcr(dataUrl: string): Promise<string> {
   const mod: any = await import("tesseract.js");
   const createWorker = mod.createWorker ?? mod.default?.createWorker;
   if (!createWorker) throw new Error("OCR engine unavailable");
-  const worker = await createWorker("eng", 1, { logger: () => {} });
+  const worker = await createWorker("eng", 1, {
+    workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/worker.min.js",
+    corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@7.0.0/",
+    langPath: "https://tessdata.projectnaptha.com/4.0.0",
+    logger: () => {},
+  });
   try {
     const { data } = await worker.recognize(dataUrl);
     return String(data?.text ?? "");
