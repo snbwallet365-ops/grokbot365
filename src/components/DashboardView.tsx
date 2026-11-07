@@ -1,197 +1,288 @@
-import { useMemo, useRef, useState } from "react";
-import { ArrowRight, Briefcase, FileText, Globe2, Loader2, Plus, Search, Trash2, Upload } from "lucide-react";
-import { useStore, type CaseFile } from "../lib/store";
-import { COUNTRIES, findCountry } from "../lib/countries";
-import ConnLogo from "./ConnLogo";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, Briefcase, FileStack, FileText, Globe2, Plus, Search, Trash2, Upload, Sparkles, ShieldCheck, Users2 } from "lucide-react";
+import { useStore, useRuntime, type CaseFile } from "../lib/store";
+import { COUNTRIES } from "../lib/countries";
+import { CONNECTORS } from "../lib/connectors";
+import BrandMark from "./Logo";
 import { cn } from "../utils/cn";
 
-const KINDS: { id: CaseFile["kind"]; label: string; bn: string; agent: string; color: string }[] = [
-  { id: "visa", label: "Visa filing", bn: "ভিসা ফাইলিং", agent: "browser", color: "#007aff" },
-  { id: "recruit", label: "Recruitment", bn: "রিক্রুটমেন্ট", agent: "visa", color: "#ff9500" },
-  { id: "docs", label: "Documentation", bn: "ডকুমেন্টেশন", agent: "docs", color: "#5856d6" },
+/** Animated counter — Apple trust-section style (ease-out, no layout shift). */
+function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
+  const [n, setN] = useState(0);
+  const raf = useRef<number | null>(null);
+  useEffect(() => {
+    const start = performance.now();
+    const step = (t: number) => {
+      const p = Math.min(1, (t - start) / 1100);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setN(Math.round(to * eased));
+      if (p < 1) raf.current = requestAnimationFrame(step);
+    };
+    raf.current = requestAnimationFrame(step);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [to]);
+  return <span>{n}{suffix}</span>;
+}
+
+const KINDS = [
+  { id: "visa", label: "Visa", icon: Globe2, color: "#0071e3" },
+  { id: "recruit", label: "Recruitment", icon: Users2, color: "#34c759" },
+  { id: "docs", label: "Documentation", icon: FileText, color: "#ff9f0a" },
 ];
 
-const STATUS: Record<CaseFile["status"], { label: string; cls: string }> = {
-  new: { label: "নতুন", cls: "bg-[#0a84ff]/12 text-[#0a84ff]" },
-  working: { label: "চলছে", cls: "bg-[#ff9500]/15 text-[#b26a00]" },
-  filed: { label: "ফাইল হয়েছে", cls: "bg-[#5e5ce6]/15 text-[#4b48c9]" },
-  approved: { label: "অনুমোদিত", cls: "bg-[#34c759]/15 text-[#1f8b3d]" },
-  onhold: { label: "স্থগিত", cls: "bg-black/8 text-label2" },
-};
+const AGENTS = [
+  { id: "browser", name: "Visa Filing", desc: "Country rules, forms, portal submissions", glyph: "globe" },
+  { id: "visa", name: "Global Recruitment", desc: "Employers, candidates, contracts, payroll", glyph: "users" },
+  { id: "docs", name: "Documentation", desc: "Passport reading, attestation, PDF packs", glyph: "doc" },
+];
+
+const MODULES = [
+  { title: "Visa processing", desc: "Country-specific rules, live checklists and portal-ready packs.", tone: "#0071e3" },
+  { title: "Recruitment", desc: "Employer demand, candidate matching and interview pipelines.", tone: "#34c759" },
+  { title: "Documentation", desc: "Passport OCR, attestation and translation, one PDF package.", tone: "#ff9f0a" },
+  { title: "Compliance", desc: "Expiry watch, missing-document gates and audit trail.", tone: "#bf5af2" },
+];
 
 export default function DashboardView({ onOpenBot }: { onOpenBot: (id: string) => void }) {
   const cases = useStore((s) => s.cases);
+  const settings = useStore((s) => s.settings);
+  const setSettings = useStore((s) => s.setSettings);
   const addCase = useStore((s) => s.addCase);
   const updateCase = useStore((s) => s.updateCase);
   const removeCase = useStore((s) => s.removeCase);
-  const settings = useStore((s) => s.settings);
-  const setSettings = useStore((s) => s.setSettings);
+  const toast = useRuntime((s) => s.showToast);
   const [q, setQ] = useState("");
-  const [filter, setFilter] = useState<"all" | CaseFile["kind"]>("all");
-  const [uploading, setUploading] = useState(false);
+  const [kind, setKind] = useState<CaseFile["kind"] | "all">("all");
   const fileRef = useRef<HTMLInputElement>(null);
-  const country = findCountry(settings.country) ?? COUNTRIES[2];
+  const docs = useStore((s) => s.docs.length);
+  const threads = useStore((s) => s.threads);
 
+  const country = COUNTRIES.find((c) => c.code === settings.country) ?? COUNTRIES[0];
   const list = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    return cases
-      .filter((c) => (filter === "all" ? true : c.kind === filter))
-      .filter((c) => !term || `${c.title} ${c.applicant} ${c.country} ${c.fileName ?? ""}`.toLowerCase().includes(term))
-      .sort((a, b) => b.updatedAt - a.updatedAt);
-  }, [cases, filter, q]);
+    const t = q.trim().toLowerCase();
+    return cases.filter((c) =>
+      (kind === "all" || c.kind === kind) &&
+      (!t || `${c.title} ${c.applicant} ${c.country} ${c.status}`.toLowerCase().includes(t)),
+    );
+  }, [cases, q, kind]);
 
-  const counts = useMemo(
-    () => ({
-      total: cases.length,
-      visa: cases.filter((c) => c.kind === "visa").length,
-      recruit: cases.filter((c) => c.kind === "recruit").length,
-      docs: cases.filter((c) => c.kind === "docs").length,
-      approved: cases.filter((c) => c.status === "approved").length,
-    }),
-    [cases],
-  );
+  const connected = Object.values(settings.connectors ?? {}).filter((c) => c.status === "connected").length;
+  const messages = Object.values(threads).reduce((n, t) => n + t.length, 0);
 
-  function startFromFile(file: File) {
-    const base = file.name.replace(/\.[a-z0-9]+$/i, "").replace(/[_-]+/g, " ").slice(0, 60) || "New case";
-    addCase({ title: base, kind: "visa", country: country.code, applicant: base, status: "new", fileName: file.name });
-    setUploading(false);
+  const openWithFile = async (file: File) => {
+    const base = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
+    const id = addCase({ title: base || "New case", kind: "visa", country: country.code, applicant: base || "Applicant", status: "new", fileName: file.name });
+    toast(`কেস তৈরি হয়েছে · ${base || file.name}`);
     onOpenBot("browser");
-  }
+    return id;
+  };
+
+  const stats = [
+    { label: "Countries", value: COUNTRIES.length, suffix: "" },
+    { label: "Connectors", value: CONNECTORS.length, suffix: "" },
+    { label: "Cases", value: cases.length, suffix: "" },
+    { label: "Knowledge", value: docs, suffix: "" },
+  ];
 
   return (
-    <div className="h-full overflow-y-auto pb-16">
-      <div className="px-4 pt-2 md:px-7">
-        {/* hero */}
-        <div className="pop relative overflow-hidden rounded-[26px] bg-gradient-to-br from-[#0a84ff] via-[#3d7bff] to-[#5e5ce6] p-5 text-white shadow-[0_18px_46px_rgba(10,132,255,.30)]">
-          <div className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-white/85">
-            <Globe2 size={13} /> {country.flag} {country.name} · {country.portal}
-          </div>
-          <div className="mt-1.5 text-[27px] font-bold leading-tight tracking-tight">ড্যাশবোর্ড</div>
-          <div className="mt-1 text-[13.5px] text-white/85">{counts.total} কেস · {counts.approved} অনুমোদিত · {COUNTRIES.length} দেশ</div>
+    <div className="h-full overflow-y-auto">
+      <div className="pb-28">
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            {KINDS.map((k) => (
-              <button key={k.id} onClick={() => onOpenBot(k.agent)} className="press rounded-[16px] bg-white/15 px-2.5 py-2.5 text-left backdrop-blur-sm">
-                <div className="text-[19px] font-bold leading-none">{k.id === "visa" ? counts.visa : k.id === "recruit" ? counts.recruit : counts.docs}</div>
-                <div className="mt-1 text-[11px] text-white/85">{k.bn}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* start from a file */}
-        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="press flex items-center gap-3 rounded-[20px] bg-surface p-4 text-left shadow-[0_1px_2px_rgba(0,0,0,.05)]"
-          >
-            <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#007aff]/12 text-[#007aff]">
-              {uploading ? <Loader2 size={20} className="animate-spin" /> : <Upload size={20} />}
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold">ফাইল দিয়ে শুরু করুন</span>
-              <span className="block truncate text-[12.5px] text-label2">পাসপোর্ট, CV বা ডকুমেন্ট আপলোড করুন</span>
-            </span>
-            <ArrowRight size={17} className="text-label3" />
-          </button>
-
-          <button onClick={() => onOpenBot("grok")} className="press flex items-center gap-3 rounded-[20px] bg-surface p-4 text-left shadow-[0_1px_2px_rgba(0,0,0,.05)]">
-            <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-[#34c759]/12 text-[#1f8b3d]"><Plus size={20} /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold">নতুন কেস</span>
-              <span className="block truncate text-[12.5px] text-label2">এজেন্টকে বলুন কী করতে হবে</span>
-            </span>
-            <ArrowRight size={17} className="text-label3" />
-          </button>
-        </div>
-        <input
-          ref={fileRef}
-          type="file"
-          hidden
-          accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) { setUploading(true); setTimeout(() => startFromFile(f), 350); } }}
-        />
-
-        {/* country strip */}
-        <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between px-1">
-            <span className="text-[12.5px] font-semibold uppercase tracking-wide text-label2">দেশ</span>
-            <span className="text-[12px] text-label3">{country.days} দিন · {country.types.join(" · ")}</span>
-          </div>
-          <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-            {COUNTRIES.map((c) => (
-              <button
-                key={c.code}
-                onClick={() => setSettings((s) => ({ ...s, country: c.code }))}
-                className={cn("press flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium",
-                  settings.country === c.code ? "bg-[#007aff] text-white shadow-[0_6px_16px_rgba(0,122,255,.3)]" : "bg-surface text-label")}
-              >
-                <span>{c.flag}</span>{c.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* cases */}
-        <div className="mt-5 flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-1.5 rounded-full bg-surface px-3 py-2">
-            <Search size={15} className="text-label3" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="কেস, প্রার্থী বা ফাইল খুঁজুন" className="w-full bg-transparent text-[14px] outline-none placeholder:text-label3" />
-          </div>
-          <div className="flex gap-1 rounded-full bg-surface p-1">
-            {(["all", "visa", "recruit", "docs"] as const).map((f) => (
-              <button key={f} onClick={() => setFilter(f)} className={cn("press rounded-full px-2.5 py-1 text-[12px] font-semibold", filter === f ? "bg-[#007aff] text-white" : "text-label2")}>
-                {f === "all" ? "সব" : f === "visa" ? "ভিসা" : f === "recruit" ? "রিক্রুট" : "ডকস"}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-3 space-y-2">
-          {list.length === 0 && (
-            <div className="rounded-[20px] bg-surface p-6 text-center">
-              <FileText size={26} className="mx-auto text-label3" />
-              <div className="mt-2 text-[15px] font-semibold">এখনো কোনো কেস নেই</div>
-              <div className="mt-1 text-[13px] text-label2">উপরের “ফাইল দিয়ে শুরু করুন” চাপুন বা এজেন্টকে লিখুন।</div>
+        {/* ---------- Hero ---------- */}
+        <section className="relative px-5 pt-8 pb-4 md:px-10 md:pt-14">
+          <div className="mx-auto max-w-[980px]">
+            <div className="reveal flex items-center gap-2.5">
+              <BrandMark size={30} />
+              <span className="eyebrow">VisaHOBe · Global mobility OS</span>
             </div>
-          )}
-          {list.map((c) => {
-            const meta = KINDS.find((k) => k.id === c.kind)!;
-            const cc = findCountry(c.country);
-            return (
-              <div key={c.id} className="fade-up flex items-center gap-3 rounded-[20px] bg-surface p-3.5 shadow-[0_1px_2px_rgba(0,0,0,.05)]">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] text-white" style={{ background: meta.color }}>
-                  {c.kind === "visa" ? <Globe2 size={18} /> : c.kind === "recruit" ? <Briefcase size={18} /> : <FileText size={18} />}
-                </span>
-                <button onClick={() => onOpenBot(meta.agent)} className="min-w-0 flex-1 text-left">
-                  <div className="truncate text-[15px] font-semibold">{c.title}</div>
-                  <div className="truncate text-[12.5px] text-label2">{cc?.flag} {cc?.name ?? c.country} · {meta.bn}{c.fileName ? ` · ${c.fileName}` : ""}</div>
-                </button>
-                <select
-                  value={c.status}
-                  onChange={(e) => updateCase(c.id, { status: e.target.value as CaseFile["status"] })}
-                  className={cn("shrink-0 rounded-full px-2 py-1 text-[11.5px] font-semibold outline-none", STATUS[c.status].cls)}
-                >
-                  {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                </select>
-                <button onClick={() => removeCase(c.id)} className="press shrink-0 rounded-full p-1.5 text-label3 hover:text-[#ff3b30]"><Trash2 size={15} /></button>
-              </div>
-            );
-          })}
-        </div>
+            <h1 className="reveal reveal-1 display-1 mt-5 text-[var(--label)]">
+              Global hiring.<br />
+              <span className="bg-gradient-to-r from-[#0071e3] via-[#5e5ce6] to-[#bf5af2] bg-clip-text text-transparent">Visas included.</span>
+            </h1>
+            <p className="reveal reveal-2 mt-5 max-w-[620px] text-[17px] leading-relaxed text-[var(--label2)] md:text-[19px]">
+              One desk for recruitment, visa processing, documentation and payroll across {COUNTRIES.length} countries.
+              Your AI agents read the passport, build the file and keep every deadline.
+            </p>
+            <div className="reveal reveal-3 mt-7 flex flex-wrap items-center gap-3">
+              <button onClick={() => fileRef.current?.click()} className="press flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-3 text-[15px] font-semibold text-white shadow-[0_10px_28px_rgba(0,113,227,.32)]">
+                <Upload size={17} /> Start from a passport
+              </button>
+              <button onClick={() => onOpenBot("grok")} className="press flex items-center gap-2 rounded-full border border-[var(--sep)] bg-white/70 px-5 py-3 text-[15px] font-semibold backdrop-blur">
+                <Sparkles size={16} className="text-[#0071e3]" /> Ask the main agent
+              </button>
+              <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) openWithFile(f); e.currentTarget.value = ""; }} />
+            </div>
 
-        {/* agents */}
-        <div className="mt-6 grid gap-2.5 sm:grid-cols-3">
-          {KINDS.map((k) => (
-            <button key={k.id} onClick={() => onOpenBot(k.agent)} className="press flex items-center gap-3 rounded-[20px] bg-surface p-3.5 text-left shadow-[0_1px_2px_rgba(0,0,0,.05)]">
-              <ConnLogo letter={k.label[0]} color={k.color} size={38} />
-              <span className="min-w-0">
-                <span className="block truncate text-[14.5px] font-semibold">{k.label}</span>
-                <span className="block truncate text-[12px] text-label2">{k.bn}</span>
-              </span>
-            </button>
-          ))}
-        </div>
+            {/* trust strip */}
+            <div className="reveal reveal-4 mt-9 grid grid-cols-2 gap-3 md:grid-cols-4">
+              {stats.map((s) => (
+                <div key={s.label} className="apple-card px-4 py-3.5">
+                  <div className="text-[26px] font-semibold tracking-tight md:text-[30px]"><Counter to={s.value} suffix={s.suffix} /></div>
+                  <div className="mt-0.5 text-[12px] text-[var(--label2)]">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Agents ---------- */}
+        <section className="px-5 pt-6 md:px-10">
+          <div className="mx-auto max-w-[980px]">
+            <div className="flex items-end justify-between">
+              <h2 className="title-3">Your AI desk</h2>
+              <button onClick={() => onOpenBot("grok")} className="press flex items-center gap-1 text-[14px] font-medium text-[#0071e3]">
+                Open all <ArrowRight size={15} />
+              </button>
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              {AGENTS.map((a, i) => (
+                <button key={a.id} onClick={() => onOpenBot(a.id)}
+                  className={cn("apple-card reveal group px-5 py-5 text-left", i === 0 && "reveal-1", i === 1 && "reveal-2", i === 2 && "reveal-3")}>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-[#0071e3] to-[#5e5ce6] text-white shadow-[0_8px_20px_rgba(0,113,227,.28)]">
+                    {a.glyph === "globe" ? <Globe2 size={20} /> : a.glyph === "users" ? <Users2 size={20} /> : <FileText size={20} />}
+                  </div>
+                  <div className="mt-4 text-[17px] font-semibold tracking-tight">{a.name}</div>
+                  <div className="mt-1 text-[13.5px] leading-snug text-[var(--label2)]">{a.desc}</div>
+                  <div className="mt-3 flex items-center gap-1 text-[13px] font-medium text-[#0071e3] opacity-0 transition-opacity group-hover:opacity-100">
+                    Open <ArrowRight size={14} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Country ---------- */}
+        <section className="px-5 pt-8 md:px-10">
+          <div className="mx-auto max-w-[980px]">
+            <h2 className="title-3">Destination</h2>
+            <p className="mt-1 text-[14px] text-[var(--label2)]">Rules, portal and checklist switch with the country you pick.</p>
+            <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+              {COUNTRIES.map((c) => (
+                <button key={c.code} onClick={() => { setSettings((s) => ({ ...s, country: c.code })); toast(`${c.bn} নির্বাচিত`); }}
+                  className={cn("press flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-[13.5px] font-medium transition-all",
+                    c.code === country.code ? "border-transparent bg-[#0071e3] text-white shadow-[0_6px_18px_rgba(0,113,227,.3)]" : "border-[var(--sep)] bg-white/70 text-[var(--label)] backdrop-blur")}>
+                  <span>{c.flag}</span>{c.bn}
+                </button>
+              ))}
+            </div>
+            <div className="apple-card mt-4 grid gap-4 p-5 sm:grid-cols-3">
+              <div>
+                <div className="eyebrow">Portal</div>
+                <div className="mt-1 text-[15px] font-semibold">{country.portal}</div>
+                <div className="text-[13px] text-[var(--label2)]">{country.days} days typical</div>
+              </div>
+              <div>
+                <div className="eyebrow">Visa types</div>
+                <div className="mt-1 text-[13.5px] leading-relaxed text-[var(--label2)]">{country.types.join(" · ")}</div>
+              </div>
+              <div>
+                <div className="eyebrow">Required</div>
+                <div className="mt-1 text-[13.5px] leading-relaxed text-[var(--label2)]">{country.needs.slice(0, 4).join(", ")}</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Modules ---------- */}
+        <section className="px-5 pt-9 md:px-10">
+          <div className="mx-auto max-w-[980px]">
+            <h2 className="title-3">Everything connected</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {MODULES.map((m) => (
+                <div key={m.title} className="apple-card px-5 py-5">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: m.tone }} />
+                    <div className="text-[16px] font-semibold tracking-tight">{m.title}</div>
+                  </div>
+                  <p className="mt-2 text-[13.5px] leading-snug text-[var(--label2)]">{m.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ---------- Cases ---------- */}
+        <section className="px-5 pt-9 md:px-10">
+          <div className="mx-auto max-w-[980px]">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <h2 className="title-3">Cases</h2>
+              <div className="flex items-center gap-1.5">
+                <div className="relative">
+                  <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[var(--label3)]" />
+                  <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search"
+                    className="w-40 rounded-full border border-[var(--sep)] bg-white/70 py-2 pr-3 pl-8 text-[13.5px] outline-none backdrop-blur placeholder:text-[var(--label3)]" />
+                </div>
+                <button onClick={() => fileRef.current?.click()} className="press flex h-9 w-9 items-center justify-center rounded-full bg-[#0071e3] text-white"><Plus size={17} /></button>
+              </div>
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <button onClick={() => setKind("all")} className={cn("press rounded-full px-3 py-1.5 text-[13px] font-medium", kind === "all" ? "bg-[var(--label)] text-white" : "bg-white/70 text-[var(--label2)] backdrop-blur")}>All</button>
+              {KINDS.map((k) => (
+                <button key={k.id} onClick={() => setKind(k.id as CaseFile["kind"])}
+                  className={cn("press flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium", kind === k.id ? "bg-[var(--label)] text-white" : "bg-white/70 text-[var(--label2)] backdrop-blur")}>
+                  <k.icon size={13} />{k.label}
+                </button>
+              ))}
+            </div>
+
+            {list.length === 0 ? (
+              <div className="apple-card mt-3 flex flex-col items-center justify-center px-6 py-12 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--fill)]"><FileStack size={24} className="text-[var(--label2)]" /></div>
+                <div className="mt-4 text-[17px] font-semibold">No cases yet</div>
+                <p className="mt-1 max-w-[300px] text-[13.5px] text-[var(--label2)]">Drop a passport or a form and the desk creates the case, reads the document and starts the file.</p>
+                <button onClick={() => fileRef.current?.click()} className="press mt-4 rounded-full bg-[#0071e3] px-4 py-2.5 text-[14px] font-semibold text-white">Start from a file</button>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2.5">
+                {list.map((c) => {
+                  const k = KINDS.find((x) => x.id === c.kind) ?? KINDS[0];
+                  const flag = COUNTRIES.find((x) => x.code === c.country)?.flag ?? "🌍";
+                  return (
+                    <div key={c.id} className="apple-card flex items-center gap-3 px-4 py-3.5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] text-white" style={{ background: k.color }}>
+                        <k.icon size={18} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[15px] font-semibold">{c.title}</div>
+                        <div className="truncate text-[12.5px] text-[var(--label2)]">{flag} {c.country} · {c.fileName ?? "manual"} · {new Date(c.updatedAt).toLocaleDateString("en-GB")}</div>
+                      </div>
+                      <select value={c.status} onChange={(e) => updateCase(c.id, { status: e.target.value as CaseFile["status"] })}
+                        className="shrink-0 rounded-full bg-[var(--fill)] px-2.5 py-1.5 text-[12.5px] font-medium outline-none">
+                        <option value="new">New</option>
+                        <option value="working">Working</option>
+                        <option value="filed">Filed</option>
+                        <option value="approved">Approved</option>
+                        <option value="onhold">On hold</option>
+                      </select>
+                      <button onClick={() => removeCase(c.id)} className="press shrink-0 text-[var(--label3)] hover:text-[#ff3b30]"><Trash2 size={16} /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ---------- Live system ---------- */}
+        <section className="px-5 pt-9 md:px-10">
+          <div className="mx-auto max-w-[980px]">
+            <div className="apple-card flex flex-wrap items-center gap-4 px-5 py-4">
+              <ShieldCheck size={20} className="text-[#34c759]" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[14.5px] font-semibold">{connected} connectors live · {messages} messages logged</div>
+                <div className="text-[12.5px] text-[var(--label2)]">Keys stay on this device. Nothing is shared without your approval.</div>
+              </div>
+              <button onClick={() => onOpenBot("grok")} className="press flex items-center gap-1 rounded-full bg-[var(--fill)] px-3.5 py-2 text-[13px] font-semibold">
+                <Briefcase size={14} /> Open desk
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <div className="h-6" />
       </div>
     </div>
   );

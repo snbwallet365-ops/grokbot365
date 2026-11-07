@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { PanelLeft } from "lucide-react";
+import { PanelLeft, LayoutDashboard, FileStack, Plug, Brain, Settings as SettingsIcon } from "lucide-react";
 import { useStore, useRuntime } from "./lib/store";
 import { checkServer, runBot } from "./lib/agent";
 import { runFlow } from "./lib/flows";
@@ -133,11 +133,11 @@ function Workspace() {
   };
 
   return (
-    <div className="app-bg relative flex h-dvh w-full overflow-hidden md:gap-2.5 md:p-2.5">
+    <div className="apple-bg relative flex h-dvh w-full overflow-hidden md:gap-2.5 md:p-2.5">
       {/* Ambient liquid blobs */}
-      <div className="blob top-[-10%] left-[-5%] h-[45vh] w-[45vh] bg-[#7aa8ff]" />
-      <div className="blob right-[-8%] bottom-[-12%] h-[50vh] w-[50vh] bg-[#ff9ec7]" style={{ animationDelay: "-8s" }} />
-      <div className="blob top-[30%] left-[45%] h-[35vh] w-[35vh] bg-[#8ef0cf]" style={{ animationDelay: "-15s" }} />
+      <div className="blob float-soft top-[-16%] left-[-8%] h-[42vh] w-[42vh] bg-[#cfe3ff]" />
+      <div className="blob float-soft right-[-10%] bottom-[-14%] h-[46vh] w-[46vh] bg-[#ffe0ef]" style={{ animationDelay: "-8s" }} />
+      <div className="blob float-soft top-[38%] left-[52%] h-[30vh] w-[30vh] bg-[#d9f7e6]" style={{ animationDelay: "-15s" }} />
 
       {wide && sidebar()}
 
@@ -159,6 +159,8 @@ function Workspace() {
         )}
         {content()}
       </main>
+
+      {!wide && section !== "bots" && <MobileTabs section={section} setSection={setSection} />}
 
       {showRight && activeId && (xl ? (
         <div className="slide-right relative z-10 h-full w-[400px] shrink-0 2xl:w-[460px]">
@@ -197,6 +199,34 @@ function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () 
     <div className="fixed inset-0 z-[55]">
       <div className={closing ? "scrim-out absolute inset-0 bg-black/30 backdrop-blur-[2px]" : "scrim-in absolute inset-0 bg-black/30 backdrop-blur-[2px]"} onClick={onClose} />
       <div className={closing ? "drawer-out absolute inset-y-0 left-0" : "drawer-in absolute inset-y-0 left-0"}>{children}</div>
+    </div>
+  );
+}
+
+
+/** iOS-style glass tab bar (phones) */
+function MobileTabs({ section, setSection }: { section: Section; setSection: (s: Section) => void }) {
+  const tabs = [
+    { id: "dashboard" as Section, label: "Home", icon: LayoutDashboard },
+    { id: "package" as Section, label: "Package", icon: FileStack },
+    { id: "connections" as Section, label: "Connect", icon: Plug },
+    { id: "brain" as Section, label: "Brain", icon: Brain },
+    { id: "settings" as Section, label: "Settings", icon: SettingsIcon },
+  ];
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-2">
+      <div className="tab-glass pointer-events-auto flex items-center gap-1 rounded-[22px] px-1.5 py-1.5">
+        {tabs.map((t) => {
+          const active = section === t.id;
+          return (
+            <button key={t.id} onClick={() => setSection(t.id)}
+              className={"press flex h-12 w-[62px] flex-col items-center justify-center gap-0.5 rounded-[17px] transition-all duration-300 " + (active ? "bg-[#0071e3] text-white shadow-[0_8px_20px_rgba(0,113,227,.30)]" : "text-[var(--label2)]")}>
+              <t.icon size={19} strokeWidth={active ? 2.4 : 1.9} />
+              <span className="text-[10.5px] font-medium">{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
